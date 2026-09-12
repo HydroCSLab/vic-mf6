@@ -15,6 +15,14 @@
 
 set -eu
 
+repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+python_exe=${VICMF6_PYTHON:-$(command -v python)}
+
+if [ -z "$python_exe" ] || [ ! -x "$python_exe" ]; then
+    printf '%s\n' "python was not found in the active environment" >&2
+    exit 2
+fi
+
 force=false
 if [ "${1:-}" = "--force" ]; then
     force=true
@@ -48,4 +56,14 @@ if [ -n "$interface_elevation" ]; then
     args+=(--interface-elevation-m "$interface_elevation")
 fi
 
-python -E -m vicmf6.preprocess.exchange_builder "${args[@]}"
+exec env -u PYTHONPATH -u PYTHONHOME \
+    "$python_exe" -E -c '
+import runpy
+import sys
+
+source_directory = sys.argv[1]
+arguments = sys.argv[2:]
+sys.path.insert(0, source_directory)
+sys.argv = ["vicmf6.preprocess.exchange_builder", *arguments]
+runpy.run_module("vicmf6.preprocess.exchange_builder", run_name="__main__")
+' "$repo_dir/src" "${args[@]}"

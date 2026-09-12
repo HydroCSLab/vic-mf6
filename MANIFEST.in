@@ -4,5 +4,7 @@ include CHANGELOG.md
 include environment.yml
 include vicmf6
 recursive-include tests *.py
-recursive-include scripts *.sh
+recursive-include scripts *.sh *.py
 recursive-include native *.c *.sh
+recursive-include examples *.py *.yml *.md
+recursive-include docs *.md

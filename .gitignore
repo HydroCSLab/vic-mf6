@@ -17,3 +17,6 @@ run/
 native/libvic_parent_disconnect.so
 
 examples/*/config.local.yml
+examples/stehekin/exchange_table.csv
+examples/stehekin/exchange_table.summary.json
+examples/stehekin/exchange_table.summary.txt
