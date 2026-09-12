@@ -1,0 +1,17 @@
+name: vicmf6
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - numpy
+  - pyyaml
+  - mpi4py
+  - netcdf4
+  - xmipy
+  - flopy>=3.9
+  - matplotlib>=3.8
+  - pyproj>=3.6
+  - shapely>=2.0
+  - pytest
+  - ruff
+  - pip

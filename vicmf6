@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+# run vicmf6 directly from this source checkout without installing the package.
+
+set -euo pipefail
+
+repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+python_executable=${VICMF6_PYTHON:-$(command -v python)}
+
+exec env -u PYTHONPATH -u PYTHONHOME \
+    "$python_executable" -E -c '
+import runpy
+import sys
+
+source_directory = sys.argv[1]
+arguments = sys.argv[2:]
+sys.path.insert(0, source_directory)
+sys.argv = ["vicmf6", *arguments]
+runpy.run_module("vicmf6.cli", run_name="__main__")
+' "$repo_dir/src" "$@"

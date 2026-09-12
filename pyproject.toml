@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vicmf6"
+version = "0.1.0rc1"
+description = "MPI-parallel two-way coupling between the VIC Image Driver and MODFLOW 6"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "GPL-3.0-or-later"
+license-files = ["COPYING"]
+authors = [
+  {name = "Abdullah Azzam"},
+  {name = "Huidae Cho"},
+]
+dependencies = [
+  "numpy>=1.24",
+  "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+runtime = [
+  "mpi4py>=3.1",
+  "netCDF4>=1.6",
+  "xmipy>=1.4",
+]
+post = [
+  "flopy>=3.9",
+  "matplotlib>=3.8",
+  "netCDF4>=1.6",
+]
+preprocess = [
+  "flopy>=3.9",
+  "netCDF4>=1.6",
+  "pyproj>=3.6",
+  "shapely>=2.0",
+]
+test = [
+  "pytest>=8",
+]
+dev = [
+  "pytest>=8",
+  "ruff>=0.6",
+]
+
+[project.scripts]
+vicmf6 = "vicmf6.bootstrap:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+  "integration: requires the compiled VIC/MODFLOW 6 runtime stack",
+  "mpi: requires mpi4py and an MPI launcher",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]

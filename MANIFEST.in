@@ -1,0 +1,8 @@
+include COPYING
+include CITATION.cff
+include CHANGELOG.md
+include environment.yml
+include vicmf6
+recursive-include tests *.py
+recursive-include scripts *.sh
+recursive-include native *.c *.sh
