@@ -101,15 +101,23 @@ examples/stehekin/run/postprocessing/report.md
 
 ## Operate a configured case
 
+When running directly from a repository checkout, use the bundled launcher so
+the command does not depend on a separately installed `vicmf6` entry point:
+
 ```bash
-vicmf6 inspect -c config.yml
-vicmf6 preflight -c config.yml
-mpirun -np <outer-ranks> vicmf6 run -c config.yml
-vicmf6 post all -c config.yml
+./vicmf6 inspect -c config.yml
+./vicmf6 preflight -c config.yml
+mpirun -np <outer-ranks> ./vicmf6 run -c config.yml
+./vicmf6 post all -c config.yml
 ```
 
 Use one outer controller rank plus one rank for each coupled MODFLOW 6 GWF
 model. `vic.mpi_processes` separately controls the VIC child-job size.
+
+The complete, reproducible checkout-local command is the Stehekin acceptance
+workflow above. It uses the tracked configuration template and example model
+builder, while requiring only the local VIC executable, VIC input data, and
+MODFLOW 6 shared library to be supplied in `config.local.yml`.
 
 Capture the software environment alongside results:
 
