@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+title: vicmf6
+message: "If you use this software, please cite the software release and the associated publication when available."
+type: software
+authors:
+  - family-names: Azzam
+    given-names: Abdullah
+  - family-names: Cho
+    given-names: Huidae
+version: 0.1.0rc1
+license: GPL-3.0-or-later
