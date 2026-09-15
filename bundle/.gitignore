@@ -1,0 +1,10 @@
+results/
+.native/
+*.tar
+*.tar.gz
+**/__pycache__/
+*.pyc
+.ruff_cache/
+*.aux
+*.log
+*.out
