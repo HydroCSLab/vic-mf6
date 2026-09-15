@@ -1,16 +1,16 @@
-# Copy this file to config.local.yml, then replace the three CHANGE_ME paths.
+# Copy this file to config.local.yml, then replace the three @...@ markers.
 # The generated MF6 model, exchange table, and all outputs stay in this example.
 run:
   directory: run
 
 mf6:
   namefile: run/mf6/mfsim.nam
-  library: /CHANGE_ME/absolute/path/to/libmf6.so
+  library: "@MF6_LIBRARY@"
   max_solve_iterations: 100
 
 vic:
-  global_file: /CHANGE_ME/absolute/path/to/Stehekin_image_test.global.txt
-  executable: /CHANGE_ME/absolute/path/to/vic_image.exe
+  global_file: "@VIC_GLOBAL_FILE@"
+  executable: "@VIC_EXECUTABLE@"
   mpi_processes: 1
   omp_threads: 1
   spawn_timeout_seconds: 3600
