@@ -1,0 +1,32 @@
+run:
+  directory: run
+
+mf6:
+  namefile: run/mf6/mfsim.nam
+  library: "@INSTALL_DIR@/lib/libmf6.so"
+  max_solve_iterations: 100
+
+vic:
+  global_file: stehekin.global.txt
+  executable: "@INSTALL_DIR@/bin/vic_image.exe"
+  mpi_processes: 1
+  omp_threads: 1
+  spawn_timeout_seconds: 3600
+  preload_library: "@INSTALL_DIR@/lib/libvic_parent_disconnect.so"
+
+coupling:
+  exchange_table: exchange_table.csv
+  interval_days: 1.0
+  scheme: explicit
+  exchange_length_m: 100.0
+  exchange_conductivity_scale: 0.001
+  head_transform: pressure_head_from_interface_elevation
+  require_full_vic_coverage: true
+  coverage_relative_tolerance: 1.0e-10
+  conservation_absolute_tolerance_m3: 1.0e-5
+  conservation_relative_tolerance: 1.0e-11
+  api_absolute_tolerance_m3_per_day: 1.0e-5
+
+diagnostics:
+  verbosity: info
+  write_rank_logs: true
