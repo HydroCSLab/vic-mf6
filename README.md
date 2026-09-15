@@ -129,6 +129,25 @@ See [Runtime and configuration](docs/runtime-and-configuration.md) for the YAML
 contract and preprocessing commands. See [Coupling design](docs/coupling-design.md)
 for the scientific ownership, signs, units, algorithm, and MPI topology.
 
+## Build the complete Docker bundle
+
+The `bundle/` directory provides the supported examiner workflow.
+It builds VIC, MODFLOW 6, and this coupler in one Linux container and includes
+the Stehekin acceptance case and the manuscript verification experiments.
+The external model sources are pinned as submodules.
+
+```bash
+git clone --recurse-submodules https://github.com/mabdazzam/vic-mf6.git
+cd vic-mf6
+./bundle/scripts/build-image.sh
+./bundle/scripts/run-verification-evidence.sh
+./bundle/scripts/run-acceptance.sh bundle/results/stehekin
+./bundle/scripts/run-feedback-campaign.sh bundle/results/manuscript-campaign
+```
+
+The complete bundle instructions, native developer build, component lock, and
+release procedure are in [`bundle/README.md`](bundle/README.md).
+
 ## Citation and license
 
 Citation metadata is in [`CITATION.cff`](CITATION.cff). The software is licensed
