@@ -28,19 +28,23 @@ sudo apt-get install --yes \
 Clone the bundle recursively and verify its exact source lock before building:
 
 ```bash
-git clone --recurse-submodules https://github.com/mabdazzam/vic-mf6.git
-cd vic-mf6
+mkdir -p "$HOME/usr/local/src"
+git clone --recurse-submodules https://github.com/mabdazzam/vic-mf6.git \
+    "$HOME/usr/local/src/vic-mf6"
+cd "$HOME/usr/local/src/vic-mf6"
 ./bundle/scripts/check-components.sh
 ```
 
-The commands below install only under `.native/`, which is ignored by Git.
-Choose another absolute prefix if you maintain a shared development install.
+The commands below install under a user-owned prefix in `$HOME/usr/local`.
+Choose `/usr/local` instead if you are managing a shared machine and have the
+required administrative permission.
 
 ```bash
 export BUNDLE_DIR="$PWD/bundle"
-export VICMF6_PREFIX="$PWD/.native/install"
-export VICMF6_BUILD="$PWD/.native/build"
-mkdir -p "$VICMF6_PREFIX/bin" "$VICMF6_PREFIX/lib" "$VICMF6_BUILD"
+export VICMF6_PREFIX="$HOME/usr/local/opt/vic-mf6"
+export VICMF6_BUILD="$HOME/usr/local/src/vic-mf6-build"
+mkdir -p "$HOME/usr/local/src" "$HOME/usr/local/bin" \
+    "$VICMF6_PREFIX/bin" "$VICMF6_PREFIX/lib" "$VICMF6_BUILD"
 ```
 
 ## Build VIC Image Driver
@@ -57,6 +61,7 @@ make -C "$BUNDLE_DIR/components/vic/vic/drivers/image" model \
     USER="$USER"
 install -D -m 0755 "$BUNDLE_DIR/components/vic/vic/drivers/image/vic_image.exe" \
     "$VICMF6_PREFIX/bin/vic_image.exe"
+ln -sfn "$VICMF6_PREFIX/bin/vic_image.exe" "$HOME/usr/local/bin/vic_image.exe"
 ```
 
 The VIC checkout includes the coupling-specific source changes.
@@ -79,6 +84,7 @@ FC=mpifort meson setup "$VICMF6_BUILD/modflow6" "$BUNDLE_DIR/components/modflow6
     -Dfortran_args=-ffree-line-length-none
 meson compile -C "$VICMF6_BUILD/modflow6"
 meson install -C "$VICMF6_BUILD/modflow6"
+ln -sfn "$VICMF6_PREFIX/bin/mf6" "$HOME/usr/local/bin/mf6"
 ```
 
 `-ffree-line-length-none` makes the source compatible with current GNU

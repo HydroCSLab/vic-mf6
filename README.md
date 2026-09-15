@@ -19,6 +19,25 @@ The earlier serial and one-way MPI implementations are preserved at the
 | `examples/stehekin/` | Small end-to-end coupled verification case |
 | `docs/` | Scientific design, configuration, and developer documentation |
 
+## Recommended build: complete Docker bundle
+
+The `bundle/` directory is the recommended way for an examiner to build and
+run the complete software stack.
+It builds VIC, MODFLOW 6, and this coupler in one Linux container and includes
+the Stehekin acceptance case and the manuscript verification experiments.
+The external model sources are pinned as submodules.
+
+```bash
+git clone --recurse-submodules https://github.com/mabdazzam/vic-mf6.git
+cd vic-mf6
+./bundle/scripts/build-image.sh
+./bundle/scripts/run-verification-evidence.sh
+./bundle/scripts/run-acceptance.sh bundle/results/stehekin
+./bundle/scripts/run-feedback-campaign.sh bundle/results/manuscript-campaign
+```
+
+Review the complete instructions in [`bundle/README.md`](bundle/README.md).
+
 ## Required runtime stack
 
 The Python package orchestrates existing model builds. A complete coupled run
@@ -63,15 +82,30 @@ cp examples/stehekin/config.example.yml \
 ${EDITOR:-vi} examples/stehekin/config.local.yml
 ```
 
-Set these entries to the validated local builds and data:
+For a native build, use the user-owned installation layout below.
+It avoids requiring root access and gives the configuration stable paths.
+The native build guide creates these directories and installs the compiled
+components there.
 
 ```yaml
 mf6:
-  library: /absolute/path/to/libmf6.so
+  library: /home/USERNAME/usr/local/opt/vic-mf6/lib/libmf6.so
 
 vic:
-  global_file: /absolute/path/to/Stehekin_image_test.global.txt
-  executable: /absolute/path/to/vic_image.exe
+  global_file: /home/USERNAME/usr/local/src/vic-mf6/bundle/examples/stehekin/stehekin.global.txt
+  executable: /home/USERNAME/usr/local/bin/vic_image.exe
+```
+
+Replace `USERNAME` with the output of `id -un`, or generate the file from the
+shell variable used by the native guide:
+
+```bash
+export VICMF6_PREFIX="$HOME/usr/local/opt/vic-mf6"
+mkdir -p "$HOME/usr/local/src" "$HOME/usr/local/bin" "$VICMF6_PREFIX"
+sed -e "s|@MF6_LIBRARY@|$VICMF6_PREFIX/lib/libmf6.so|" \
+    -e "s|@VIC_GLOBAL_FILE@|$PWD/bundle/examples/stehekin/stehekin.global.txt|" \
+    -e "s|@VIC_EXECUTABLE@|$HOME/usr/local/bin/vic_image.exe|" \
+    examples/stehekin/config.example.yml > examples/stehekin/config.local.yml
 ```
 
 Then run the complete acceptance workflow:
@@ -128,25 +162,6 @@ Capture the software environment alongside results:
 See [Runtime and configuration](docs/runtime-and-configuration.md) for the YAML
 contract and preprocessing commands. See [Coupling design](docs/coupling-design.md)
 for the scientific ownership, signs, units, algorithm, and MPI topology.
-
-## Build the complete Docker bundle
-
-The `bundle/` directory provides the supported examiner workflow.
-It builds VIC, MODFLOW 6, and this coupler in one Linux container and includes
-the Stehekin acceptance case and the manuscript verification experiments.
-The external model sources are pinned as submodules.
-
-```bash
-git clone --recurse-submodules https://github.com/mabdazzam/vic-mf6.git
-cd vic-mf6
-./bundle/scripts/build-image.sh
-./bundle/scripts/run-verification-evidence.sh
-./bundle/scripts/run-acceptance.sh bundle/results/stehekin
-./bundle/scripts/run-feedback-campaign.sh bundle/results/manuscript-campaign
-```
-
-The complete bundle instructions, native developer build, component lock, and
-release procedure are in [`bundle/README.md`](bundle/README.md).
 
 ## Citation and license
 
