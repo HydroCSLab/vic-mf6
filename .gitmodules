@@ -1,0 +1,6 @@
+[submodule "bundle/components/vic"]
+	path = bundle/components/vic
+	url = https://github.com/mabdazzam/VIC.git
+[submodule "bundle/components/modflow6"]
+	path = bundle/components/modflow6
+	url = https://github.com/mabdazzam/modflow6.git

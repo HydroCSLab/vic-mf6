@@ -1,0 +1,17 @@
+.git
+**/.git
+bundle/results
+examples/*/run
+build
+dist
+*.egg-info
+results
+*.tar
+*.tar.gz
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.venv
+**/builddir
+**/dist
+**/*.egg-info

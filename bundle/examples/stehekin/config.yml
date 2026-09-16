@@ -1,20 +1,18 @@
-# Copy this file to config.local.yml, then replace the three @...@ markers.
-# The generated MF6 model, exchange table, and all outputs stay in this example.
 run:
   directory: run
 
 mf6:
   namefile: run/mf6/mfsim.nam
-  library: "@MF6_LIBRARY@"
+  library: "@INSTALL_DIR@/lib/libmf6.so"
   max_solve_iterations: 100
 
 vic:
-  global_file: "@VIC_GLOBAL_FILE@"
-  executable: "@VIC_EXECUTABLE@"
+  global_file: stehekin.global.txt
+  executable: "@INSTALL_DIR@/bin/vic_image.exe"
   mpi_processes: 1
   omp_threads: 1
   spawn_timeout_seconds: 3600
-  preload_library: ../../native/libvic_parent_disconnect.so
+  preload_library: "@INSTALL_DIR@/lib/libvic_parent_disconnect.so"
 
 coupling:
   exchange_table: exchange_table.csv

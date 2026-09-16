@@ -1,0 +1,14 @@
+.git
+.gitmodules
+bundle/results
+build
+dist
+*.egg-info
+examples/*/run
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.venv
+**/builddir
+**/dist
+**/*.egg-info

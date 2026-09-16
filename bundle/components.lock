@@ -1,0 +1,5 @@
+# component|revision|path|repository
+# The coupler is built from the parent vic-mf6 checkout.  Only external model
+# sources are submodules here, so one clone has one authoritative coupler tree.
+vic|1b3a42541eed451fcf28feba1daf14525e89e334|components/vic|https://github.com/mabdazzam/VIC.git
+modflow6|073c4a37c5bb0d81e966474964e678b859829723|components/modflow6|https://github.com/mabdazzam/modflow6.git
