@@ -1,5 +1,9 @@
 # Staged verification evidence
 
+The complete fresh A–G and H1–H8 experiments are now available through the
+[manuscript workflow](../../../../examples/manuscript/README.md).
+The command described below remains an audit of historical stored values.
+
 This directory ships the compact numerical record behind the H1--H8 Stehekin
 verification campaign reported in the manuscript.
 It is separate from the production acceptance workflow:

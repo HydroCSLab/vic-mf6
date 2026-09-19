@@ -8,6 +8,9 @@ details are kept in [`docs/`](docs/README.md).
 The earlier serial and one-way MPI implementations are preserved at the
 `report-nm-hydro` and `one-way-mpi` tags.
 
+For the paper's frozen experiments, figures, and validation workflow, see
+[manuscript reproduction](examples/manuscript/README.md).
+
 ## Repository structure
 
 | Path | Purpose |
