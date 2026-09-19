@@ -17,6 +17,8 @@ commands:
   feedback-campaign OUTPUT_DIRECTORY
                                 run the ten manuscript process experiments
   verification-evidence         check the compact H1--H8 evidence record
+  manuscript OUTPUT_DIRECTORY [--workers N]
+                                rerun the full manuscript experiment suite
   versions                       print the installed component revisions
   shell                          open a diagnostic shell
 EOF
@@ -140,6 +142,17 @@ run_acceptance() {
 
 command=${1:-acceptance}
 case "$command" in
+    manuscript)
+        shift
+        if [ "$#" -lt 1 ]; then
+            usage >&2
+            exit 2
+        fi
+        output_dir=$1
+        shift
+        exec python "$coupler_source/examples/manuscript/scripts/run-manuscript.py" \
+            --output-dir "$output_dir" --install-dir "$install_dir" "$@"
+        ;;
     acceptance)
         shift
         if [ "$#" -gt 1 ]; then

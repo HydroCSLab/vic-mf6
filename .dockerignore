@@ -1,5 +1,6 @@
 .git
 .gitmodules
+src/vicmf6.tar.gz
 bundle/results
 build
 dist

@@ -34,6 +34,7 @@ COPY examples /src/vic-mf6/examples
 COPY vicmf6 /src/vic-mf6/vicmf6
 COPY bundle/components.lock /tmp/components.lock
 COPY bundle/requirements-container.txt /tmp/requirements-container.txt
+COPY bundle/requirements-container.lock /tmp/requirements-container.lock
 
 # vic links directly against the same openmpi and netcdf libraries used by
 # the rest of the stack. a stable version string keeps the binary provenance
@@ -78,6 +79,7 @@ RUN python3 -m venv /opt/venv \
         wheel==0.45.1 \
     && MPICC=mpicc /opt/venv/bin/python -m pip install --no-cache-dir \
         --no-binary=mpi4py \
+        --constraint /tmp/requirements-container.lock \
         --requirement /tmp/requirements-container.txt \
     && /opt/venv/bin/python -m pip install --no-cache-dir \
         --no-build-isolation \
@@ -118,8 +120,11 @@ COPY src /opt/vicmf6/src/vic-mf6/src
 COPY native /opt/vicmf6/src/vic-mf6/native
 COPY scripts /opt/vicmf6/src/vic-mf6/scripts
 COPY examples /opt/vicmf6/src/vic-mf6/examples
+COPY tests /opt/vicmf6/src/vic-mf6/tests
 COPY vicmf6 /opt/vicmf6/src/vic-mf6/vicmf6
 COPY bundle/components.lock /opt/vicmf6/share/component-revisions.txt
+COPY bundle/requirements-container.txt /opt/vicmf6/share/requirements-container.txt
+COPY bundle/requirements-container.lock /opt/vicmf6/share/requirements-container.lock
 COPY bundle/examples/stehekin /opt/vicmf6/examples/stehekin
 COPY bundle/scripts/container-entrypoint.sh /opt/vicmf6/bin/container-entrypoint
 
