@@ -45,6 +45,16 @@ The default results directory is
 comparison must report zero failures. The paper build uses the committed CSV
 tables after this check; it does not run models during LaTeX compilation.
 
+From the `vic-mf6` checkout, inspect the host results with:
+
+```bash
+find ../analysis/vic-mf6-manuscript -mindepth 1 -maxdepth 1 -type d -printf '%f/\n' | sort
+cat ../analysis/vic-mf6-manuscript/execution.csv
+```
+
+`/results/manuscript` is only the corresponding path inside Docker. The runner
+prints the host output directory at the start and after completion.
+
 For a shorter software check, run this from `vic-mf6`:
 
 ```bash

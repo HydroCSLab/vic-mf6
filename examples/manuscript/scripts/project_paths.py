@@ -6,11 +6,11 @@ import sys
 
 
 def get_project_dir():
-    """Return ``projects/<project-code>`` containing this script."""
-    path = Path(__file__).resolve()
-    if "projects" not in path.parts:
-        sys.exit("This script must be located within a project directory.")
-    return Path(*path.parts[: path.parts.index("projects") + 2])
+    """Return the parent directory containing both repository checkouts."""
+    repository_dir = Path(__file__).resolve().parents[3]
+    if not (repository_dir / "examples" / "manuscript").is_dir():
+        sys.exit("This script must be located in a vic-mf6 checkout.")
+    return repository_dir.parent
 
 
 project_dir = get_project_dir()
