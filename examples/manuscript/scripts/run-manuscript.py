@@ -130,7 +130,7 @@ def main():
         script("run-spatial-mapping-diagnostic", "--campaign-dir", out / "initialization", "--output-dir", tables, "--coupler-dir", coupler)
     script("collect-manuscript-tables", "--run-dir", out, "--output-dir", tables)
     (out / "completion.txt").write_text("Completed stages: " + ", ".join(selected) + "\n")
-    print(f"[OK] completed {', '.join(selected)}; outputs: {out}", flush=True)
+    print(f"[OK] completed {', '.join(selected)}; container outputs: {out}", flush=True)
 
 
 if __name__ == "__main__":

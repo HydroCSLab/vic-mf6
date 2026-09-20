@@ -25,6 +25,8 @@ if [ -n "$(find "$output_dir" -mindepth 1 -print -quit)" ]; then
 fi
 image=${VICMF6_IMAGE:-vic-mf6:manuscript}
 printf 'Manuscript results: %s\n' "$output_dir"
+printf 'Container image: %s\n' "$image"
+printf 'Image ID: '
 docker image inspect --format '{{.Id}}' "$image"
 if [ -n "${VICMF6_COLOR:-}" ]; then
     color_setting=$VICMF6_COLOR
@@ -33,9 +35,16 @@ elif [ -t 1 ]; then
 else
     color_setting=never
 fi
-exec docker run --rm --init --shm-size=1g \
-    --env OMP_NUM_THREADS=1 --env OPENBLAS_NUM_THREADS=1 \
-    --env MKL_NUM_THREADS=1 --env NUMEXPR_NUM_THREADS=1 \
-    --env "VICMF6_COLOR=$color_setting" \
-    --volume "$output_dir:/results/manuscript" \
-    "$image" manuscript /results/manuscript "$@"
+if docker run --rm --init --shm-size=1g \
+        --env OMP_NUM_THREADS=1 --env OPENBLAS_NUM_THREADS=1 \
+        --env MKL_NUM_THREADS=1 --env NUMEXPR_NUM_THREADS=1 \
+        --env "VICMF6_COLOR=$color_setting" \
+        --volume "$output_dir:/results/manuscript" \
+        "$image" manuscript /results/manuscript "$@"
+then
+    printf '[OK] manuscript results saved on host: %s\n' "$output_dir"
+else
+    status=$?
+    printf '[FAIL] manuscript run failed; partial results and logs are in: %s\n' "$output_dir" >&2
+    exit "$status"
+fi
