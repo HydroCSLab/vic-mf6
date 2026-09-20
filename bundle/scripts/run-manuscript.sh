@@ -4,14 +4,8 @@
 # directory. An explicit first argument remains available for a separate run.
 set -euo pipefail
 get_project_dir() {
-    path=$(cd "$(dirname "$0")" && pwd)
-    basepath=${path%%/projects/*}
-    if [ "$path" = "$basepath" ]; then
-        echo "This script must be located within a project directory." >&2
-        exit 1
-    fi
-    subpath=${path#*/projects/}
-    echo "$basepath/projects/${subpath%%/*}"
+    repository_dir=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd)
+    dirname -- "$repository_dir"
 }
 
 project_dir=$(get_project_dir)
