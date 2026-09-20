@@ -39,6 +39,7 @@ if docker run --rm --init --shm-size=1g \
         --env OMP_NUM_THREADS=1 --env OPENBLAS_NUM_THREADS=1 \
         --env MKL_NUM_THREADS=1 --env NUMEXPR_NUM_THREADS=1 \
         --env "VICMF6_COLOR=$color_setting" \
+        --env "VICMF6_HOST_OUTPUT_DIR=$output_dir" \
         --volume "$output_dir:/results/manuscript" \
         "$image" manuscript /results/manuscript "$@"
 then

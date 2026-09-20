@@ -42,6 +42,10 @@ def main():
     logs.mkdir()
     tables = out / "tables"
     tables.mkdir()
+    host_output = os.environ.get("VICMF6_HOST_OUTPUT_DIR")
+    if host_output:
+        print(f"Host output directory: {host_output}", flush=True)
+        print(f"Container output directory: {out}", flush=True)
     env = dict(os.environ, OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1", MKL_NUM_THREADS="1", NUMEXPR_NUM_THREADS="1")
     env["PYTHONUNBUFFERED"] = "1"
     color_setting = os.environ.get("VICMF6_COLOR", "auto").lower()
@@ -130,7 +134,10 @@ def main():
         script("run-spatial-mapping-diagnostic", "--campaign-dir", out / "initialization", "--output-dir", tables, "--coupler-dir", coupler)
     script("collect-manuscript-tables", "--run-dir", out, "--output-dir", tables)
     (out / "completion.txt").write_text("Completed stages: " + ", ".join(selected) + "\n")
-    print(f"[OK] completed {', '.join(selected)}; container outputs: {out}", flush=True)
+    if host_output:
+        print(f"[OK] completed {', '.join(selected)}; host outputs: {host_output}", flush=True)
+    else:
+        print(f"[OK] completed {', '.join(selected)}; container outputs: {out}", flush=True)
 
 
 if __name__ == "__main__":
