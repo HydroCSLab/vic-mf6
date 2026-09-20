@@ -1,13 +1,28 @@
 #!/usr/bin/env bash
 
-# Retain every manuscript experiment and diagnostic in a new host directory.
+# Retain every manuscript experiment and diagnostic under the project analysis
+# directory. An explicit first argument remains available for a separate run.
 set -euo pipefail
-if [ "$#" -lt 1 ]; then
-    printf 'usage: %s OUTPUT_DIRECTORY [--workers N] [--stages LIST]\n' "$0" >&2
-    exit 2
+get_project_dir() {
+    path=$(cd "$(dirname "$0")" && pwd)
+    basepath=${path%%/projects/*}
+    if [ "$path" = "$basepath" ]; then
+        echo "This script must be located within a project directory." >&2
+        exit 1
+    fi
+    subpath=${path#*/projects/}
+    echo "$basepath/projects/${subpath%%/*}"
+}
+
+project_dir=$(get_project_dir)
+output_dir=${VICMF6_MANUSCRIPT_OUTPUT_DIR:-$project_dir/analysis/vic-mf6-manuscript}
+if [ "$#" -gt 0 ] && [[ "$1" != --* ]]; then
+    output_dir=$1
+    shift
 fi
-output_dir=$1
-shift
+if [[ "$output_dir" != /* ]]; then
+    output_dir=$project_dir/$output_dir
+fi
 mkdir -p -- "$output_dir"
 output_dir=$(realpath -- "$output_dir")
 if [ -n "$(find "$output_dir" -mindepth 1 -print -quit)" ]; then
@@ -15,6 +30,7 @@ if [ -n "$(find "$output_dir" -mindepth 1 -print -quit)" ]; then
     exit 2
 fi
 image=${VICMF6_IMAGE:-vic-mf6:manuscript}
+printf 'Manuscript results: %s\n' "$output_dir"
 docker image inspect --format '{{.Id}}' "$image"
 exec docker run --rm --init --shm-size=1g \
     --env OMP_NUM_THREADS=1 --env OPENBLAS_NUM_THREADS=1 \

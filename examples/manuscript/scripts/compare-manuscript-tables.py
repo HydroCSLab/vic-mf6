@@ -10,6 +10,8 @@ import csv
 import math
 from pathlib import Path
 
+from project_paths import analysis_dir, find_paper_dir, project_path
+
 
 def read(path):
     with path.open(newline="") as stream:
@@ -28,10 +30,28 @@ def number(value):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--tables", type=Path, required=True)
-    p.add_argument("--paper-dir", type=Path, required=True, help="Paper repository root")
-    p.add_argument("--output", type=Path, required=True)
+    p.add_argument(
+        "--tables",
+        type=Path,
+        default=analysis_dir / "tables",
+        help="Fresh tables (default: analysis/vic-mf6-manuscript/tables)",
+    )
+    p.add_argument(
+        "--paper-dir",
+        type=Path,
+        default=None,
+        help="Paper checkout (default: sibling vic-mf6-paper)",
+    )
+    p.add_argument(
+        "--output",
+        type=Path,
+        default=analysis_dir / "table-comparison.csv",
+        help="Comparison report (default: analysis/vic-mf6-manuscript/table-comparison.csv)",
+    )
     a = p.parse_args()
+    a.tables = project_path(a.tables)
+    a.paper_dir = find_paper_dir() if a.paper_dir is None else project_path(a.paper_dir)
+    a.output = project_path(a.output)
     records = []
     for path in sorted(a.tables.glob("data-*.csv")):
         previous = a.paper_dir / "manuscript" / path.name
