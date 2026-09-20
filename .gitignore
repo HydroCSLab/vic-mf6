@@ -12,6 +12,7 @@ htmlcov/
 build/
 dist/
 examples/*/run/
+examples/manuscript/verification/fixtures/
 run/
 *.log
 native/libvic_parent_disconnect.so

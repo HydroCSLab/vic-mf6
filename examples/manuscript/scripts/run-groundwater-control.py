@@ -15,7 +15,7 @@ p.add_argument("--install-dir", type=Path, default=Path("/opt/vicmf6"))
 a = p.parse_args()
 a.output_dir.mkdir(parents=True, exist_ok=False)
 work = a.output_dir / "mf6"
-subprocess.run(["python", str(a.install_dir / "src/vic-mf6/examples/stehekin/build_mf6.py"),
+subprocess.run(["python", str(a.install_dir / "src/vic-mf6/examples/stehekin/create_mf6.py"),
                 "--workspace", str(work)], check=True)
 with (a.output_dir / "mf6.log").open("w") as stream:
     subprocess.run([str(a.install_dir / "bin/mf6")], cwd=work, stdout=stream, stderr=subprocess.STDOUT, check=True)

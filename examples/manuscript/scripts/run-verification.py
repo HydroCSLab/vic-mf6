@@ -47,7 +47,13 @@ def main():
     if binary.exists():
         binary.unlink()
     binary.symlink_to(installed / "bin/vic_image.exe")
-    shutil.copytree(source / "fixtures", vic / "experiments/gw_exchange")
+    fixture_dir = vic / "experiments/gw_exchange"
+    fixture_builder = source / "create_mf6_fixtures.py"
+    fixture_dir.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        [sys.executable, str(fixture_builder), "--output-dir", str(fixture_dir)],
+        check=True,
+    )
     bundled = installed / "examples/stehekin"
     inputs = bundled / "input"
     for old, new in [("domain_stehekin_20151028.nc", "domain.stehekin.20151028.nc"),
@@ -68,6 +74,9 @@ def main():
                 hashes.append(dict(file=str(path), sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
     for path in [Path(__file__), installed / "bin/vic_image.exe", installed / "lib/libmf6.so"]:
         hashes.append(dict(file=str(path), sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
+    for path in sorted(fixture_dir.rglob("*")):
+        if path.is_file():
+            hashes.append(dict(file=str(path), sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
     write_csv(out / "source-hashes.csv", hashes)
     env = {k: v for k, v in os.environ.items() if not k.startswith("VIC_GW_")}
     env.update(VICMF6_VERIFICATION_OUTPUT=str(out), VICMF6_VERIFICATION_SAMPLE=str(sample),

@@ -55,7 +55,7 @@ The local configuration is ignored by Git.
 The wrapper performs these steps in order:
 
 1. clears only the example's prior generated run products;
-2. builds the 12-cell connected MODFLOW 6 DISU fixture;
+2. creates the 12-cell connected MODFLOW 6 DISU fixture when absent;
 3. rebuilds the conservative VIC-MODFLOW 6 overlap table;
 4. builds the native MPI child-disconnect helper;
 5. runs configuration inspection and preflight;
@@ -91,7 +91,7 @@ configured VIC global file, VIC executable, or MODFLOW 6 shared library.
 The individual commands are useful when diagnosing a failure:
 
 ~~~bash
-python examples/stehekin/build_mf6.py
+python examples/stehekin/create_mf6.py
 
 ./scripts/build_stehekin_exchange_table.sh \
     examples/stehekin/config.local.yml

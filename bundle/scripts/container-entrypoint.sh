@@ -124,7 +124,7 @@ run_acceptance() {
     run_step render_config \
         "$example_source/config.yml" \
         "$example_dir/config.local.yml"
-    run_step python -E "$example_dir/build_mf6.py"
+    run_step python -E "$example_dir/create_mf6.py"
     run_step "$work_dir/scripts/build_stehekin_exchange_table.sh" \
         "$example_dir/config.local.yml"
     run_step "$work_dir/vicmf6" inspect -c "$example_dir/config.local.yml"

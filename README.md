@@ -118,12 +118,14 @@ Then run the complete acceptance workflow:
     examples/stehekin/config.local.yml
 ```
 
-The wrapper rebuilds the synthetic MODFLOW 6 fixture and exchange table,
+The wrapper creates the synthetic MODFLOW 6 fixture when absent and rebuilds
+the exchange table,
 builds the native helper, inspects the configuration, runs the two-way coupled
 case with two outer MPI ranks, checks its numerical signatures, and creates the
 postprocessing report.
 
-The acceptance case owns its generated files. Each run replaces
+The acceptance case owns its generated files. Each run creates the MODFLOW 6
+deck when absent and replaces
 `examples/stehekin/run/mf6`, `run/vic`, `run/diagnostics`, and
 `run/postprocessing`. It does not modify the configured VIC global file,
 executable, or MODFLOW 6 shared library.
