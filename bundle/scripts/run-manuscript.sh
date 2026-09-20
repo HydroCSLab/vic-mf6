@@ -26,8 +26,16 @@ fi
 image=${VICMF6_IMAGE:-vic-mf6:manuscript}
 printf 'Manuscript results: %s\n' "$output_dir"
 docker image inspect --format '{{.Id}}' "$image"
+if [ -n "${VICMF6_COLOR:-}" ]; then
+    color_setting=$VICMF6_COLOR
+elif [ -t 1 ]; then
+    color_setting=always
+else
+    color_setting=never
+fi
 exec docker run --rm --init --shm-size=1g \
     --env OMP_NUM_THREADS=1 --env OPENBLAS_NUM_THREADS=1 \
     --env MKL_NUM_THREADS=1 --env NUMEXPR_NUM_THREADS=1 \
+    --env "VICMF6_COLOR=$color_setting" \
     --volume "$output_dir:/results/manuscript" \
     "$image" manuscript /results/manuscript "$@"

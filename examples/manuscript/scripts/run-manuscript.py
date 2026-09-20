@@ -6,6 +6,7 @@ import hashlib
 import importlib.metadata
 import os
 from pathlib import Path
+import shlex
 import shutil
 import subprocess
 import sys
@@ -13,6 +14,11 @@ import time
 
 
 STAGES = ["unit", "acceptance", "verification", "process", "reference", "robustness", "initialization"]
+
+
+def _ansi(code, text, enabled):
+    """Wrap text in an ANSI color when terminal output supports it."""
+    return f"\033[{code}m{text}\033[0m" if enabled else text
 
 
 def main():
@@ -37,6 +43,13 @@ def main():
     tables = out / "tables"
     tables.mkdir()
     env = dict(os.environ, OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1", MKL_NUM_THREADS="1", NUMEXPR_NUM_THREADS="1")
+    env["PYTHONUNBUFFERED"] = "1"
+    color_setting = os.environ.get("VICMF6_COLOR", "auto").lower()
+    color = color_setting == "always" or (color_setting == "auto" and sys.stdout.isatty())
+    blue = lambda text: _ansi(34, text, color)
+    cyan = lambda text: _ansi(36, text, color)
+    green = lambda text: _ansi(32, text, color)
+    red = lambda text: _ansi(31, text, color)
     shutil.copy2(install / "share/component-revisions.txt", out / "component-revisions.txt")
     with (out / "python-packages.csv").open("w", newline="") as stream:
         writer = csv.writer(stream)
@@ -54,17 +67,35 @@ def main():
     records = []
 
     def run(name, command, cwd=None):
-        print(f"[manuscript] {name}", flush=True)
+        print(blue(f"[manuscript] {name}"), flush=True)
+        print(cyan("$ " + " ".join(shlex.quote(str(part)) for part in command)), flush=True)
         start = time.monotonic()
         with (logs / f"{name}.log").open("w") as stream:
-            result = subprocess.run(list(map(str, command)), cwd=cwd, env=env, stdout=stream, stderr=subprocess.STDOUT)
-        records.append([name, result.returncode, time.monotonic() - start])
+            process = subprocess.Popen(
+                list(map(str, command)),
+                cwd=cwd,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+            )
+            assert process.stdout is not None
+            for line in process.stdout:
+                stream.write(line)
+                stream.flush()
+                sys.stdout.write(line)
+                sys.stdout.flush()
+            returncode = process.wait()
+        records.append([name, returncode, time.monotonic() - start])
         with (out / "execution.csv").open("w", newline="") as stream:
             writer = csv.writer(stream)
             writer.writerow(["stage", "exit_code", "seconds"])
             writer.writerows(records)
-        if result.returncode:
+        if returncode:
+            print(red(f"[FAIL] {name} (exit code {returncode})"), flush=True)
             raise RuntimeError(f"{name} failed; inspect {logs / (name + '.log')}")
+        print(green(f"[OK] {name}"), flush=True)
 
     def script(name, *arguments):
         run(name, [sys.executable, scripts / f"{name}.py", *arguments])
