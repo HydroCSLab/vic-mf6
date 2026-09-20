@@ -39,6 +39,59 @@ cd vic-mf6
 ./bundle/scripts/run-feedback-campaign.sh bundle/results/manuscript-campaign
 ```
 
+### Linux
+
+Install Docker Engine from the [official Linux guide](https://docs.docker.com/engine/install/), then verify the daemon:
+
+```bash
+docker --version
+docker info
+docker run --rm hello-world
+```
+
+Run the complete software checks from the repository root:
+
+```bash
+./bundle/scripts/build-image.sh
+./bundle/scripts/run-verification-evidence.sh
+./bundle/scripts/run-acceptance.sh bundle/results/stehekin
+./bundle/scripts/run-feedback-campaign.sh bundle/results/manuscript-campaign
+```
+
+### macOS
+
+Install and start [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/), then verify it from Terminal:
+
+```bash
+docker --version
+docker info
+docker run --rm hello-world
+```
+
+On Apple silicon, set the x86-64 platform before running the same repository-root commands:
+
+```bash
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+./bundle/scripts/build-image.sh
+./bundle/scripts/run-verification-evidence.sh
+./bundle/scripts/run-acceptance.sh bundle/results/stehekin
+./bundle/scripts/run-feedback-campaign.sh bundle/results/manuscript-campaign
+```
+
+### Windows
+
+Install [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/) with Linux containers and WSL 2. In PowerShell, verify Docker and enter Ubuntu WSL:
+
+```powershell
+docker --version
+docker info
+docker run --rm hello-world
+wsl --install -d Ubuntu
+wsl
+```
+
+Run the Linux commands above inside the Ubuntu WSL terminal from the repository root. The full manuscript workflow, including the paper checkout and figure compilation, is in [`examples/manuscript/README.md`](examples/manuscript/README.md).
+
 Review the complete instructions in [`bundle/README.md`](bundle/README.md).
 
 ## Required runtime stack

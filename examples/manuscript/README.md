@@ -13,30 +13,80 @@ reviewed TeX and CSV sources. It follows the HydroCS project layout:
     └── vic-mf6-manuscript/  # generated runs and comparison report
 ```
 
-From a shell, copy and run:
+## Linux
+
+Install Docker Engine using the [official Linux instructions](https://docs.docker.com/engine/install/), then check the daemon:
+
+```bash
+docker --version
+docker info
+docker run --rm hello-world
+```
+
+Clone both repositories and run the complete workflow:
 
 ```bash
 mkdir -p ~/projects/vic-mf6-manuscript
 cd ~/projects/vic-mf6-manuscript
-git clone --recurse-submodules --branch manuscript \
-  https://github.com/mabdazzam/vic-mf6.git vic-mf6
-git clone --branch manuscript \
-  https://github.com/mabdazzam/vic-mf6-paper.git vic-mf6-paper
-
+git clone --recurse-submodules --branch manuscript https://github.com/mabdazzam/vic-mf6.git vic-mf6
+git clone --branch manuscript https://github.com/mabdazzam/vic-mf6-paper.git vic-mf6-paper
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r vic-mf6-paper/scripts/requirements-figures.txt
-
 cd vic-mf6
 VICMF6_VERSION=manuscript-2026-09-19 ./bundle/scripts/build-image.sh vic-mf6:manuscript
 ./bundle/scripts/run-manuscript.sh --workers 2
 python3 examples/manuscript/scripts/compare-manuscript-tables.py
-
 cd ../vic-mf6-paper
 python3 scripts/create-manuscript-figures.py
 make -C manuscript
 make -C manuscript supplement graphical-abstract
 ```
+
+## macOS
+
+Install [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/), start it, and check Docker from Terminal:
+
+```bash
+docker --version
+docker info
+docker run --rm hello-world
+```
+
+For Apple silicon, use the x86-64 container architecture. Intel Macs can omit the first line:
+
+```bash
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+mkdir -p ~/projects/vic-mf6-manuscript
+cd ~/projects/vic-mf6-manuscript
+git clone --recurse-submodules --branch manuscript https://github.com/mabdazzam/vic-mf6.git vic-mf6
+git clone --branch manuscript https://github.com/mabdazzam/vic-mf6-paper.git vic-mf6-paper
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r vic-mf6-paper/scripts/requirements-figures.txt
+cd vic-mf6
+VICMF6_VERSION=manuscript-2026-09-19 ./bundle/scripts/build-image.sh vic-mf6:manuscript
+./bundle/scripts/run-manuscript.sh --workers 2
+python3 examples/manuscript/scripts/compare-manuscript-tables.py
+cd ../vic-mf6-paper
+python3 scripts/create-manuscript-figures.py
+make -C manuscript
+make -C manuscript supplement graphical-abstract
+```
+
+## Windows
+
+Install [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/) with Linux containers and its WSL 2 backend. In PowerShell, check Docker and install Ubuntu WSL if needed:
+
+```powershell
+docker --version
+docker info
+docker run --rm hello-world
+wsl --install -d Ubuntu
+wsl
+```
+
+Run the Linux commands above inside the Ubuntu WSL terminal. The workflow uses Bash, MPI, `make`, and Linux container mounts, so WSL 2 supplies the supported shell.
 
 The default results directory is
 `~/projects/vic-mf6-manuscript/analysis/vic-mf6-manuscript/`. It contains

@@ -51,6 +51,59 @@ Run the three reviewable workflows:
 ./bundle/scripts/run-feedback-campaign.sh bundle/results/manuscript-campaign
 ```
 
+### Linux
+
+Install Docker Engine using the [official Linux guide](https://docs.docker.com/engine/install/), then check the daemon:
+
+```bash
+docker --version
+docker info
+docker run --rm hello-world
+```
+
+From the repository root, run:
+
+```bash
+./bundle/scripts/build-image.sh
+./bundle/scripts/run-verification-evidence.sh
+./bundle/scripts/run-acceptance.sh bundle/results/stehekin
+./bundle/scripts/run-feedback-campaign.sh bundle/results/manuscript-campaign
+```
+
+### macOS
+
+Install and start [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/), then check Docker from Terminal:
+
+```bash
+docker --version
+docker info
+docker run --rm hello-world
+```
+
+On Apple silicon, set the x86-64 platform and run the same commands:
+
+```bash
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+./bundle/scripts/build-image.sh
+./bundle/scripts/run-verification-evidence.sh
+./bundle/scripts/run-acceptance.sh bundle/results/stehekin
+./bundle/scripts/run-feedback-campaign.sh bundle/results/manuscript-campaign
+```
+
+### Windows
+
+Install [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/) with Linux containers and WSL 2. In PowerShell:
+
+```powershell
+docker --version
+docker info
+docker run --rm hello-world
+wsl --install -d Ubuntu
+wsl
+```
+
+Run the Linux commands above inside the Ubuntu WSL terminal from the repository root. For the complete two-repository manuscript workflow, use [`../examples/manuscript/README.md`](../examples/manuscript/README.md).
+
 The H1--H8 command checks the reported signs, conservative transfers,
 temporal refinement, midpoint improvement, spatial mapping, and connected
 groundwater budgets.
