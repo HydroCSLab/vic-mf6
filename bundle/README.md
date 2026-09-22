@@ -70,7 +70,7 @@ bundle/results/stehekin/software-environment.txt
 | --- | --- |
 | `bundle/components/` | Exact external VIC and MODFLOW 6 Git revisions |
 | `bundle/examples/stehekin/` | Public sample input and acceptance fixture |
-| `bundle/scripts/` | Checkout verification, image build, acceptance, and campaign wrappers |
+| `bundle/scripts/` | Component checks, image build, and acceptance wrappers |
 | `bundle/docs/` | Architecture, native-build, provenance, and release documentation |
 | `bundle/components.lock` | Human-readable external component repositories and revisions |
 | `bundle/Dockerfile` | Complete build and runtime environment |
