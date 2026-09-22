@@ -6,7 +6,8 @@ FROM ubuntu:${UBUNTU_VERSION} AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update \
+RUN printf 'Acquire::ForceIPv4 "true";\n' > /etc/apt/apt.conf.d/99force-ipv4 \
+    && apt-get update \
     && apt-get install --yes --no-install-recommends \
         build-essential \
         ca-certificates \
@@ -94,7 +95,8 @@ ARG SOURCE_REPOSITORY=https://github.com/mabdazzam/vic-mf6
 ARG VERSION=local
 ARG REVISION=unknown
 
-RUN apt-get update \
+RUN printf 'Acquire::ForceIPv4 "true";\n' > /etc/apt/apt.conf.d/99force-ipv4 \
+    && apt-get update \
     && apt-get install --yes --no-install-recommends \
         ca-certificates \
         libnetcdf-dev \

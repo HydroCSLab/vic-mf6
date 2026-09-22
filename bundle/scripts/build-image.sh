@@ -19,6 +19,7 @@ fi
 "$bundle_dir/scripts/check-components.sh"
 
 docker build \
+    --network "${VICMF6_BUILD_NETWORK:-default}" \
     --build-arg "USER_ID=$(id -u)" \
     --build-arg "GROUP_ID=$(id -g)" \
     --build-arg "SOURCE_REPOSITORY=$source_repository" \
