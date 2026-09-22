@@ -3,8 +3,7 @@
 The `bundle/` directory builds and runs the complete VIC--MODFLOW 6 two-way coupling
 stack as one OCI image.
 It pins the two external model repositories, uses one MPI runtime, and includes the
-small Stehekin example used for software acceptance and manuscript process
-experiments.
+small Stehekin example used for software acceptance.
 Users do not need to build or connect VIC, MODFLOW 6, and `vicmf6` separately.
 
 The validated platform is 64-bit Linux with Docker Engine and at least two
@@ -14,7 +13,7 @@ have not been validated for MPI behavior, bind mounts, or performance.
 Use a Linux host, or WSL2 with Docker's Linux containers, for the supported
 workflow.
 
-## Quick start: build and reproduce the reported workflows
+## Quick start: build and run the acceptance case
 
 Install Git and Docker Engine, then confirm that your account can run
 `docker` without `sudo`.
@@ -38,26 +37,15 @@ Build the complete runtime:
 ./bundle/scripts/build-image.sh
 ```
 
-Run the three reviewable workflows:
+Run the generic acceptance workflow:
 
 ```bash
-# H1--H8: compact numerical-contract record.
-./bundle/scripts/run-verification-evidence.sh
-
-# Current two-way MPI Stehekin acceptance run.
 ./bundle/scripts/run-acceptance.sh bundle/results/stehekin
-
-# P1--P7: ten 60-day snowmelt, withdrawal, aquitard, and time-step cases.
-./bundle/scripts/run-feedback-campaign.sh bundle/results/manuscript-campaign
 ```
 
-The H1--H8 command checks the reported signs, conservative transfers,
-temporal refinement, midpoint improvement, spatial mapping, and connected
-groundwater budgets.
-It does not recreate the original large development outputs.
-The acceptance workflow runs the installed two-way MPI implementation.
-The process campaign produces the ten manuscript cases, their audit tables,
-and their figures.
+The acceptance workflow builds the synthetic MODFLOW 6 fixture, constructs its
+overlap table, runs the two-way MPI case, checks numerical diagnostics, and
+writes a compact report.
 
 The commands refuse to reuse a nonempty result directory.
 Choose a new directory for another run, for example:
@@ -76,30 +64,22 @@ bundle/results/stehekin/postprocessing/report.md
 bundle/results/stehekin/software-environment.txt
 ```
 
-Review process-experiment results under:
-
-```text
-bundle/results/manuscript-campaign/analysis/
-bundle/results/manuscript-campaign/figures/
-bundle/results/manuscript-campaign/<case>/provenance.json
-```
-
-See [`bundle/examples/stehekin/experiments/README.md`](examples/stehekin/experiments/README.md)
-for the ten-case matrix and the connection between cases and manuscript
-questions.
-
 ## Repository structure
 
 | Path | Purpose |
 | --- | --- |
 | `bundle/components/` | Exact external VIC and MODFLOW 6 Git revisions |
-| `bundle/examples/stehekin/` | Public sample input, experiment definitions, and verification record |
+| `bundle/examples/stehekin/` | Public sample input and acceptance fixture |
 | `bundle/scripts/` | Checkout verification, image build, acceptance, and campaign wrappers |
 | `bundle/docs/` | Architecture, native-build, provenance, and release documentation |
 | `bundle/components.lock` | Human-readable external component repositories and revisions |
 | `bundle/Dockerfile` | Complete build and runtime environment |
 
 Generated results belong under `bundle/results/` and are ignored by Git.
+
+The manuscript application experiments and their model-generation scripts are
+maintained in the separate [`vic-mf6-workflow`](https://github.com/mabdazzam/vic-mf6-workflow)
+repository.
 
 ## Developer-native build
 
