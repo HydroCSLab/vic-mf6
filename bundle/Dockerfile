@@ -117,6 +117,7 @@ COPY bundle/components/vic /opt/vicmf6/src/vic
 COPY bundle/components/modflow6 /opt/vicmf6/src/modflow6
 COPY pyproject.toml README.md COPYING MANIFEST.in /opt/vicmf6/src/vic-mf6/
 COPY src /opt/vicmf6/src/vic-mf6/src
+COPY tests /opt/vicmf6/src/vic-mf6/tests
 COPY native /opt/vicmf6/src/vic-mf6/native
 COPY scripts /opt/vicmf6/src/vic-mf6/scripts
 COPY examples /opt/vicmf6/src/vic-mf6/examples
