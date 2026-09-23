@@ -49,7 +49,13 @@ if [ -n "$(find "$output_dir" -mindepth 1 -print -quit)" ]; then
 fi
 output_dir=$(realpath "$output_dir")
 
-work_dir=$(mktemp -d "${TMPDIR:-/tmp}/vicmf6-native-acceptance.XXXXXX")
+work_root=${VICMF6_ACCEPTANCE_WORK_DIR:-$output_dir/.work}
+mkdir -p -- "$work_root"
+export TMPDIR="$work_root"
+export OMPI_MCA_orte_tmpdir_base="$work_root/ompi"
+export MPLCONFIGDIR="$work_root/matplotlib"
+mkdir -p -- "$OMPI_MCA_orte_tmpdir_base" "$MPLCONFIGDIR"
+work_dir=$(mktemp -d "$work_root/vicmf6-native-acceptance.XXXXXX")
 cleanup() {
     rm -rf -- "$work_dir"
 }

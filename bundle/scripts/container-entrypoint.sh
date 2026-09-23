@@ -100,7 +100,17 @@ run_acceptance() {
         exit 2
     fi
 
-    work_dir=$(mktemp -d /tmp/vic-mf6-acceptance.XXXXXX)
+    # Keep the temporary acceptance checkout beside the mounted result
+    # directory so the workflow does not depend on a separate /tmp volume.
+    local work_root=${VICMF6_ACCEPTANCE_WORK_DIR:-$output_dir/.work}
+    mkdir -p -- "$work_root"
+    # Open MPI and Matplotlib also create runtime files; keep those files in
+    # the same project-local scratch directory instead of the container /tmp.
+    export TMPDIR="$work_root"
+    export OMPI_MCA_orte_tmpdir_base="$work_root/ompi"
+    export MPLCONFIGDIR="$work_root/matplotlib"
+    mkdir -p -- "$OMPI_MCA_orte_tmpdir_base" "$MPLCONFIGDIR"
+    work_dir=$(mktemp -d "$work_root/vic-mf6-acceptance.XXXXXX")
     cp -a "$coupler_source/." "$work_dir/"
     example_dir="$work_dir/examples/stehekin"
     cp -a "$example_source/." "$example_dir/"
