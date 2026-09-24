@@ -21,7 +21,7 @@ Docker's official [Linux installation guide](https://docs.docker.com/engine/inst
 and [Docker Desktop guide](https://docs.docker.com/get-started/get-docker/)
 cover supported host installations.
 Plan for about 10 GB of free disk space for the image, build cache, and one
-complete manuscript campaign.
+complete acceptance run.
 
 Clone the parent repository and enter the checkout:
 
@@ -76,10 +76,6 @@ bundle/results/stehekin/software-environment.txt
 | `bundle/Dockerfile` | Complete build and runtime environment |
 
 Generated results belong under `bundle/results/` and are ignored by Git.
-
-The manuscript application experiments and their model-generation scripts are
-maintained in the separate [`vic-mf6-workflow`](https://github.com/mabdazzam/vic-mf6-workflow)
-repository.
 
 ## Developer-native build
 

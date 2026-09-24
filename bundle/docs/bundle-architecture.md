@@ -24,10 +24,9 @@ The image builds every native component against one OpenMPI installation:
 Using one MPI implementation inside the image avoids host-library ABI mixing.
 Only Docker communicates with the host; the coupled executables communicate
 inside the container.
-The three public wrappers run the compact H1--H8 record, production acceptance,
-and the ten P-series process cases inside that same installed image.
-Consequently Git and Docker are the only host-side requirements for the
-supported workflow.
+The public wrapper runs the production acceptance case inside that same
+installed image. Consequently Git and Docker are the only host-side
+requirements for the supported workflow.
 
 ## Acceptance boundary
 
@@ -55,15 +54,8 @@ without resolving those packages again.
 ## Project boundary
 
 The bundle repository contains reusable packaging, tests, documentation, and a
-small example. The tracked Stehekin experiment definitions under
-`bundle/examples/stehekin/experiments/` reproduce the ten process cases reported in
-the manuscript; their generated runs remain external to Git. The compact H1--H8
-numerical evidence table and its read-only contract audit live under
-`bundle/examples/stehekin/verification/`. It preserves the reported numerical record
-without adding roughly 695 MB of local-path raw campaign output to the release.
-Manuscript files and project-specific simulation products belong
-in their own `vic-mf6-paper` and workflow directories. Generated model inputs,
-run directories, and analysis products remain outside version control.
+small example. Generated model inputs, run directories, and analysis products
+remain outside version control.
 
 The [native developer build](native-build.md) documents the separate advanced
 route for changing or debugging a pinned component outside the image.

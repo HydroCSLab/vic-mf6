@@ -19,7 +19,7 @@ this order:
    `software-environment.txt` before assigning a version tag.
 5. Publish the tested image and record its immutable registry digest in the
    release notes. Keep the human-readable version tag for convenience, but use
-   the digest in manuscript and archival reproducibility records.
+   the digest in archival reproducibility records.
 
 ## GitHub Container Registry
 

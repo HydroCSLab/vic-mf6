@@ -34,11 +34,6 @@ cd vic-mf6
 ./bundle/scripts/run-acceptance.sh bundle/results/stehekin
 ```
 
-The manuscript application workflow is maintained separately in
-[`vic-mf6-workflow`](https://github.com/mabdazzam/vic-mf6-workflow). It uses a
-published or locally built framework image and keeps application experiments
-out of this reusable software repository.
-
 Review the complete instructions in [`bundle/README.md`](bundle/README.md).
 
 ## Required runtime stack

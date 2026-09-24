@@ -14,9 +14,6 @@ usage: container-entrypoint COMMAND [ARGUMENT]
 
 commands:
   acceptance [OUTPUT_DIRECTORY]  run Stehekin and retain its products
-  feedback-campaign OUTPUT_DIRECTORY
-                                run the ten manuscript process experiments
-  verification-evidence         check the compact H1--H8 evidence record
   versions                       print the installed component revisions
   shell                          open a diagnostic shell
 EOF
@@ -157,28 +154,6 @@ case "$command" in
             exit 2
         fi
         run_acceptance "${1:-/results/stehekin}"
-        ;;
-    feedback-campaign)
-        shift
-        if [ "$#" -ne 1 ]; then
-            usage >&2
-            exit 2
-        fi
-        case "$1" in
-            /*) ;;
-            *)
-                printf '%s\n' "output directory must be absolute: $1" >&2
-                exit 2
-                ;;
-        esac
-        exec "$example_source/experiments/run-feedback-campaign.sh" "$1"
-        ;;
-    verification-evidence)
-        if [ "$#" -ne 1 ]; then
-            usage >&2
-            exit 2
-        fi
-        exec python3 "$example_source/verification/verify_reference_results.py"
         ;;
     versions)
         if [ "$#" -ne 1 ]; then
