@@ -91,7 +91,7 @@ FROM ubuntu:${UBUNTU_VERSION} AS runtime
 ARG DEBIAN_FRONTEND=noninteractive
 ARG USER_ID=1000
 ARG GROUP_ID=1000
-ARG SOURCE_REPOSITORY=https://github.com/mabdazzam/vic-mf6
+ARG SOURCE_REPOSITORY=https://github.com/HydroCSLab/vic-mf6
 ARG VERSION=local
 ARG REVISION=unknown
 

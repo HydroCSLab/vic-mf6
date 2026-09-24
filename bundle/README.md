@@ -1,114 +1,92 @@
-# VIC-MF6 complete bundle
+# Complete Docker bundle
 
-The `bundle/` directory builds and runs the complete VIC--MODFLOW 6 two-way coupling
-stack as one OCI image.
-It pins the two external model repositories, uses one MPI runtime, and includes the
-small Stehekin example used for software acceptance.
-Users do not need to build or connect VIC, MODFLOW 6, and `vicmf6` separately.
+This directory builds the pinned VIC, MODFLOW 6, and VIC-MF6 components into
+one Linux image and runs the Stehekin acceptance example. The parent
+[`README.md`](../README.md) is the shortest start-to-finish guide.
 
-The validated platform is 64-bit Linux with Docker Engine and at least two
-available CPU cores.
-The image may run through Docker Desktop on macOS or Windows, but those hosts
-have not been validated for MPI behavior, bind mounts, or performance.
-Use a Linux host, or WSL2 with Docker's Linux containers, for the supported
-workflow.
+## Check Docker
 
-## Quick start: build and run the acceptance case
+### Linux
 
-Install Git and Docker Engine, then confirm that your account can run
-`docker` without `sudo`.
-Docker's official [Linux installation guide](https://docs.docker.com/engine/install/)
-and [Docker Desktop guide](https://docs.docker.com/get-started/get-docker/)
-cover supported host installations.
-Plan for about 10 GB of free disk space for the image, build cache, and one
-complete acceptance run.
-
-Clone the parent repository and enter the checkout:
+Install [Docker Engine](https://docs.docker.com/engine/install/), then run:
 
 ```bash
-git clone --recurse-submodules https://github.com/mabdazzam/vic-mf6.git
-cd vic-mf6
-docker version
+# Check Docker.
+docker --version
+docker info
 ```
 
-Build the complete runtime:
+### macOS
+
+Install [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/),
+then run in Terminal:
 
 ```bash
+# Check Docker.
+docker --version
+docker info
+
+# Use the Linux image on Apple silicon.
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+```
+
+### Windows
+
+Install [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/)
+with Linux containers and WSL2. Run the build commands in Ubuntu WSL:
+
+```powershell
+# Check Docker.
+docker --version
+docker info
+
+# Install and enter Ubuntu WSL if needed.
+wsl --install -d Ubuntu
+wsl
+```
+
+## Build and run
+
+From the repository root:
+
+```bash
+# Build the complete image.
 ./bundle/scripts/build-image.sh
-```
 
-Run the generic acceptance workflow:
-
-```bash
+# Run the acceptance example.
 ./bundle/scripts/run-acceptance.sh bundle/results/stehekin
 ```
 
-The acceptance workflow builds the synthetic MODFLOW 6 fixture, constructs its
-overlap table, runs the two-way MPI case, checks numerical diagnostics, and
-writes a compact report.
-
-The commands refuse to reuse a nonempty result directory.
-Choose a new directory for another run, for example:
+The result directory must be empty. Use a new directory for another run:
 
 ```bash
+# Run a second acceptance case without replacing the first result.
 ./bundle/scripts/run-acceptance.sh bundle/results/stehekin-repeat
 ```
 
-Review the acceptance products under:
+Inspect the output:
 
-```text
-bundle/results/stehekin/acceptance-status.txt
-bundle/results/stehekin/diagnostics/run_summary.json
-bundle/results/stehekin/postprocessing/acceptance_summary.txt
-bundle/results/stehekin/postprocessing/report.md
-bundle/results/stehekin/software-environment.txt
+```bash
+# Confirm the result.
+cat bundle/results/stehekin/acceptance-status.txt
+
+# Read the summary and report.
+cat bundle/results/stehekin/postprocessing/acceptance_summary.txt
+less bundle/results/stehekin/postprocessing/report.md
 ```
 
-## Repository structure
+## Bundle contents
 
-| Path | Purpose |
+| Path | Contents |
 | --- | --- |
-| `bundle/components/` | Exact external VIC and MODFLOW 6 Git revisions |
-| `bundle/examples/stehekin/` | Public sample input and acceptance fixture |
-| `bundle/scripts/` | Component checks, image build, and acceptance wrappers |
-| `bundle/docs/` | Architecture, native-build, provenance, and release documentation |
-| `bundle/components.lock` | Human-readable external component repositories and revisions |
-| `bundle/Dockerfile` | Complete build and runtime environment |
+| `components/` | Pinned VIC and MODFLOW 6 source trees |
+| `components.lock` | Recorded component revisions |
+| `examples/stehekin/` | Public sample inputs and acceptance fixture |
+| `scripts/` | Build, component-check, and acceptance wrappers |
+| `Dockerfile` | Complete build and runtime definition |
+| `docs/` | Architecture, native development, and release details |
 
 Generated results belong under `bundle/results/` and are ignored by Git.
 
-## Developer-native build
-
-Docker is the supported reproducibility route.
-Developers who need to modify or debug a component can build the pinned stack
-on Linux with a shared compiler and MPI installation.
-The required dependencies, commands, acceptance configuration, and limits are
-documented in [Native developer build](docs/native-build.md).
-The coupler operator guide remains in the parent repository's
-[`README.md`](../README.md) and `docs/` directory.
-
-## Image management and release
-
-Use a different local image tag when reviewing changes:
-
-```bash
-./bundle/scripts/build-image.sh vic-mf6:review
-VICMF6_IMAGE=vic-mf6:review ./bundle/scripts/run-acceptance.sh bundle/results/review
-```
-
-Inspect the installed source revisions:
-
-```bash
-docker run --rm vic-mf6:local versions
-```
-
-Open a diagnostic shell:
-
-```bash
-docker run --rm -it vic-mf6:local shell
-```
-
-Release procedure, GitHub Container Registry publication, version tags, and
-immutable image digests are documented in [Releasing the bundle](docs/releasing.md).
-See [Bundle architecture](docs/bundle-architecture.md) for component ownership
-and reproducibility boundaries.
+For a native build, see [Native developer build](docs/native-build.md). For
+component ownership and image boundaries, see [Bundle architecture](docs/bundle-architecture.md).

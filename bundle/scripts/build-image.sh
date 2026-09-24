@@ -7,7 +7,7 @@ set -euo pipefail
 bundle_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 project_dir=$(CDPATH= cd -- "$bundle_dir/.." && pwd)
 image=${1:-${VICMF6_IMAGE:-vic-mf6:local}}
-source_repository=${VICMF6_SOURCE_REPOSITORY:-https://github.com/mabdazzam/vic-mf6}
+source_repository=${VICMF6_SOURCE_REPOSITORY:-https://github.com/HydroCSLab/vic-mf6}
 version=${VICMF6_VERSION:-local}
 revision=$(git -C "$project_dir" rev-parse HEAD)
 
