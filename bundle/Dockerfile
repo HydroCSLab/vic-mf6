@@ -6,7 +6,8 @@ FROM ubuntu:${UBUNTU_VERSION} AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update \
+RUN printf 'Acquire::ForceIPv4 "true";\n' > /etc/apt/apt.conf.d/99force-ipv4 \
+    && apt-get update \
     && apt-get install --yes --no-install-recommends \
         build-essential \
         ca-certificates \
@@ -94,7 +95,8 @@ ARG SOURCE_REPOSITORY=https://github.com/mabdazzam/vic-mf6
 ARG VERSION=local
 ARG REVISION=unknown
 
-RUN apt-get update \
+RUN printf 'Acquire::ForceIPv4 "true";\n' > /etc/apt/apt.conf.d/99force-ipv4 \
+    && apt-get update \
     && apt-get install --yes --no-install-recommends \
         ca-certificates \
         libnetcdf-dev \
@@ -115,6 +117,7 @@ COPY bundle/components/vic /opt/vicmf6/src/vic
 COPY bundle/components/modflow6 /opt/vicmf6/src/modflow6
 COPY pyproject.toml README.md COPYING MANIFEST.in /opt/vicmf6/src/vic-mf6/
 COPY src /opt/vicmf6/src/vic-mf6/src
+COPY tests /opt/vicmf6/src/vic-mf6/tests
 COPY native /opt/vicmf6/src/vic-mf6/native
 COPY scripts /opt/vicmf6/src/vic-mf6/scripts
 COPY examples /opt/vicmf6/src/vic-mf6/examples

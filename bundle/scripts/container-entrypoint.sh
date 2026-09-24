@@ -14,9 +14,6 @@ usage: container-entrypoint COMMAND [ARGUMENT]
 
 commands:
   acceptance [OUTPUT_DIRECTORY]  run Stehekin and retain its products
-  feedback-campaign OUTPUT_DIRECTORY
-                                run the ten manuscript process experiments
-  verification-evidence         check the compact H1--H8 evidence record
   versions                       print the installed component revisions
   shell                          open a diagnostic shell
 EOF
@@ -100,7 +97,17 @@ run_acceptance() {
         exit 2
     fi
 
-    work_dir=$(mktemp -d /tmp/vic-mf6-acceptance.XXXXXX)
+    # Keep the temporary acceptance checkout beside the mounted result
+    # directory so the workflow does not depend on a separate /tmp volume.
+    local work_root=${VICMF6_ACCEPTANCE_WORK_DIR:-$output_dir/.work}
+    mkdir -p -- "$work_root"
+    # Open MPI and Matplotlib also create runtime files; keep those files in
+    # the same project-local scratch directory instead of the container /tmp.
+    export TMPDIR="$work_root"
+    export OMPI_MCA_orte_tmpdir_base="$work_root/ompi"
+    export MPLCONFIGDIR="$work_root/matplotlib"
+    mkdir -p -- "$OMPI_MCA_orte_tmpdir_base" "$MPLCONFIGDIR"
+    work_dir=$(mktemp -d "$work_root/vic-mf6-acceptance.XXXXXX")
     cp -a "$coupler_source/." "$work_dir/"
     example_dir="$work_dir/examples/stehekin"
     cp -a "$example_source/." "$example_dir/"
@@ -122,7 +129,7 @@ run_acceptance() {
     run_step render_config \
         "$example_source/config.yml" \
         "$example_dir/config.local.yml"
-    run_step python -E "$example_dir/build_mf6.py"
+    run_step python -E "$example_dir/create_mf6.py"
     run_step "$work_dir/scripts/build_stehekin_exchange_table.sh" \
         "$example_dir/config.local.yml"
     run_step "$work_dir/vicmf6" inspect -c "$example_dir/config.local.yml"
@@ -147,28 +154,6 @@ case "$command" in
             exit 2
         fi
         run_acceptance "${1:-/results/stehekin}"
-        ;;
-    feedback-campaign)
-        shift
-        if [ "$#" -ne 1 ]; then
-            usage >&2
-            exit 2
-        fi
-        case "$1" in
-            /*) ;;
-            *)
-                printf '%s\n' "output directory must be absolute: $1" >&2
-                exit 2
-                ;;
-        esac
-        exec "$example_source/experiments/run-feedback-campaign.sh" "$1"
-        ;;
-    verification-evidence)
-        if [ "$#" -ne 1 ]; then
-            usage >&2
-            exit 2
-        fi
-        exec python3 "$example_source/verification/verify_reference_results.py"
         ;;
     versions)
         if [ "$#" -ne 1 ]; then

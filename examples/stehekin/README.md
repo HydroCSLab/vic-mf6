@@ -91,7 +91,7 @@ configured VIC global file, VIC executable, or MODFLOW 6 shared library.
 The individual commands are useful when diagnosing a failure:
 
 ~~~bash
-python examples/stehekin/build_mf6.py
+python examples/stehekin/create_mf6.py
 
 ./scripts/build_stehekin_exchange_table.sh \
     examples/stehekin/config.local.yml

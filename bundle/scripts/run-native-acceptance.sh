@@ -49,7 +49,13 @@ if [ -n "$(find "$output_dir" -mindepth 1 -print -quit)" ]; then
 fi
 output_dir=$(realpath "$output_dir")
 
-work_dir=$(mktemp -d "${TMPDIR:-/tmp}/vicmf6-native-acceptance.XXXXXX")
+work_root=${VICMF6_ACCEPTANCE_WORK_DIR:-$output_dir/.work}
+mkdir -p -- "$work_root"
+export TMPDIR="$work_root"
+export OMPI_MCA_orte_tmpdir_base="$work_root/ompi"
+export MPLCONFIGDIR="$work_root/matplotlib"
+mkdir -p -- "$OMPI_MCA_orte_tmpdir_base" "$MPLCONFIGDIR"
+work_dir=$(mktemp -d "$work_root/vicmf6-native-acceptance.XXXXXX")
 cleanup() {
     rm -rf -- "$work_dir"
 }
@@ -127,7 +133,7 @@ export MPLCONFIGDIR="$work_dir/matplotlib"
 mkdir -p "$MPLCONFIGDIR"
 
 run_step render_config
-run_step "$python_exe" -E "$example_dir/build_mf6.py"
+run_step "$python_exe" -E "$example_dir/create_mf6.py"
 run_step "$coupler_dir/scripts/build_stehekin_exchange_table.sh" \
     "$example_dir/config.local.yml"
 run_step "$coupler_dir/vicmf6" inspect -c "$example_dir/config.local.yml"

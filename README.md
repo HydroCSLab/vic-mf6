@@ -24,16 +24,14 @@ The earlier serial and one-way MPI implementations are preserved at the
 The `bundle/` directory is the recommended way for an examiner to build and
 run the complete software stack.
 It builds VIC, MODFLOW 6, and this coupler in one Linux container and includes
-the Stehekin acceptance case and the manuscript verification experiments.
+the Stehekin acceptance case.
 The external model sources are pinned as submodules.
 
 ```bash
 git clone --recurse-submodules https://github.com/mabdazzam/vic-mf6.git
 cd vic-mf6
 ./bundle/scripts/build-image.sh
-./bundle/scripts/run-verification-evidence.sh
 ./bundle/scripts/run-acceptance.sh bundle/results/stehekin
-./bundle/scripts/run-feedback-campaign.sh bundle/results/manuscript-campaign
 ```
 
 Review the complete instructions in [`bundle/README.md`](bundle/README.md).
