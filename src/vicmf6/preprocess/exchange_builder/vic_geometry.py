@@ -12,8 +12,8 @@ from typing import Any
 import numpy as np
 
 from .dependencies import _optional_imports
+from .records import ExchangeBuildError, VicSourceCell
 from .summary import _spacing_stats, _stats
-from .types import ExchangeBuildError, VicSourceCell
 
 
 def parse_vic_global(path: str | Path) -> dict[str, Any]:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..types import Mf6Geometry, Mf6HeadSeries, PostPaths
+from ..records import Mf6Geometry, Mf6HeadSeries, PostPaths
 from .output import _matplotlib
 from .spatial import (
     _plot_mapping_connectivity,

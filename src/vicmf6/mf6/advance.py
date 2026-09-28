@@ -14,7 +14,7 @@ import numpy as np
 from ..errors import Mf6RuntimeError
 from ..exchange import SignedVolume
 from .lateral_flow import lateral_flow_diagnostics
-from .types import Mf6AdvanceResult
+from .records import Mf6AdvanceResult
 
 if TYPE_CHECKING:
     from .runtime import Mf6Runtime

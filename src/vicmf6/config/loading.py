@@ -14,7 +14,7 @@ from ..model_inputs import (
     parse_mf6_simulation,
     parse_vic_global,
 )
-from .types import (
+from .records import (
     ApplicationConfig,
     CouplingConfig,
     DiagnosticsConfig,

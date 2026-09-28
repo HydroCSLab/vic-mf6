@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .acceptance import acceptance_as_dict, format_acceptance
-from .types import AcceptanceResult, PostPaths
+from .records import AcceptanceResult, PostPaths
 
 
 def make_post_paths(

@@ -15,8 +15,8 @@ from ..errors import Mf6RuntimeError
 from .advance import advance_model_to_window_boundary
 from .boundary import ApiFluxBoundary
 from .native_flow import NativeLateralFlow
+from .records import Mf6AdvanceResult
 from .time_steps import TdisSchedule
-from .types import Mf6AdvanceResult
 from .variables import resolve_variable_address
 
 

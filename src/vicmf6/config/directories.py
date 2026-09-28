@@ -6,7 +6,7 @@ exclusive creation also prevents two launches from claiming the same outputs."""
 from __future__ import annotations
 
 from ..errors import ConfigurationError
-from .types import ApplicationConfig
+from .records import ApplicationConfig
 
 
 def create_fresh_run_output_directories(config: ApplicationConfig) -> None:

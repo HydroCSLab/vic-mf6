@@ -19,7 +19,7 @@ to understand that sequence.
 | Which rank owns a model, its files, and its lifetime? | `coupling/session.py` |
 | What crosses MPI, and which reduction applies? | `coupling/parallel.py` |
 | How are accepted results reported? | `coupling/reporting.py`, `diagnostics/` |
-| How does YAML become a validated configuration? | `config/loading.py`, `config/validation.py`, `config/types.py` |
+| How does YAML become a validated configuration? | `config/loading.py`, `config/validation.py`, `config/records.py` |
 | Where do model calendars and package names come from? | `model_inputs/vic_global.py`, `model_inputs/mf6_simulation.py`, `model_inputs/mf6_time.py` |
 | How is geometry checked and used to exchange water? | `exchange/loading.py`, `exchange/table.py`, `exchange/conservation.py` |
 | How are VIC restarts and global files prepared? | `vic/runtime.py`, `vic/global_file.py`, `vic/restart_files.py` |
@@ -39,6 +39,12 @@ small objects for resources that have a lifetime. `Mf6Runtime` owns an
 plugin registry, inheritance hierarchy, or second configuration layer to learn.
 The original public imports, such as `from vicmf6.mf6 import Mf6Runtime`, still
 work through package exports. `driver.py` retains the execution entry point.
+
+Record definitions use `records.py`, and logger setup uses `log_setup.py`.
+Avoid standard-library module names such as `types.py` and `logging.py`: editors
+and other Python tools can search the current directory during startup, even
+when no framework command is being run. Package-qualified legacy imports are
+retained as aliases, without conflicting files on disk.
 
 ## Follow the water through one window
 
@@ -170,9 +176,10 @@ PYTHONPATH=src python -m pytest tests -q
 python -m ruff check src/vicmf6 tests
 ```
 
-The ordinary suite includes 88 tests covering mapping, input parsing, output
+The ordinary suite covers mapping, input parsing, output
 protection, missing data, native solve ordering, irregular schedules, substep
-integration, and injected native errors. Three additional MPI scenarios are
+integration, injected native errors, and Python startup from each source
+directory. Three additional MPI scenarios are
 opt-in on a system with the supported Open MPI/mpi4py stack:
 
 ```bash

@@ -9,13 +9,13 @@ from typing import Any
 from ..diagnostics import make_window_diagnostics
 from ..exchange import SignedVolume
 from ..schedule import CouplingWindow
-from .session import CouplingSession
-from .types import (
+from .records import (
     BoundaryExchange,
     GroundwaterStatistics,
     SurfaceExchange,
     WindowTimings,
 )
+from .session import CouplingSession
 
 
 def write_window_diagnostics(

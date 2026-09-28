@@ -9,8 +9,8 @@ from pathlib import Path
 
 from ..errors import ConfigurationError
 from .mf6_time import _parse_tdis
+from .records import Mf6ModelMetadata, Mf6SimulationMetadata, _Mf6ModelEntry
 from .text import _resolve_model_path, _strip_comment
-from .types import Mf6ModelMetadata, Mf6SimulationMetadata, _Mf6ModelEntry
 
 
 def parse_mf6_simulation(path: str | Path) -> Mf6SimulationMetadata:

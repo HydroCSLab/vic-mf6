@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from ..errors import ConservationError
-from .types import SignedVolume
+from .records import SignedVolume
 
 
 def assert_signed_volume_close(

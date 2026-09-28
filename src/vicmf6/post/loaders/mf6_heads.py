@@ -8,7 +8,7 @@ import numpy as np
 
 from ...config import ApplicationConfig
 from ...errors import PostprocessingError
-from ..types import Mf6HeadSeries
+from ..records import Mf6HeadSeries
 from .mf6_metadata import _discover_output_path
 
 

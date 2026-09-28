@@ -11,7 +11,7 @@ import numpy as np
 
 from ...config import ApplicationConfig
 from ...errors import PostprocessingError
-from ..types import Mf6Geometry
+from ..records import Mf6Geometry
 from .mf6_connections import _load_flowja
 from .mf6_metadata import _discover_output_path, _time_step_length
 

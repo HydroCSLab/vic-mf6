@@ -12,7 +12,7 @@ import numpy as np
 
 from ...config import ApplicationConfig
 from ...errors import PostprocessingError
-from ..types import Mf6Geometry
+from ..records import Mf6Geometry
 from .mf6_metadata import (
     _first_model_array,
     _grid_area,

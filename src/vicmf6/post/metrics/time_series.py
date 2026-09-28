@@ -9,7 +9,7 @@ import numpy as np
 
 from ...config import ApplicationConfig
 from ...errors import PostprocessingError
-from ..types import Mf6HeadSeries
+from ..records import Mf6HeadSeries
 
 
 def cumulative_by_step(rows: list[dict[str, Any]], value_key: str) -> list[float]:

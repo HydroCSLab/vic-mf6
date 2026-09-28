@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .types import ApplicationConfig
+from .records import ApplicationConfig
 
 
 def config_as_dict(config: ApplicationConfig) -> dict[str, Any]:

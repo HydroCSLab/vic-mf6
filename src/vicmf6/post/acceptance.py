@@ -6,7 +6,7 @@ from dataclasses import asdict
 from typing import Any
 
 from ..config import ApplicationConfig
-from .types import AcceptanceCheck, AcceptanceResult
+from .records import AcceptanceCheck, AcceptanceResult
 
 _VIC_WATER_TOLERANCE_MM = 1.0e-8
 _LATERAL_TOLERANCE_M3 = 1.0e-5

@@ -11,13 +11,13 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from ..errors import ConfigurationError
+from .records import VicGlobalMetadata, VicOutputStream
 from .text import (
     _nonnegative_int_text,
     _positive_int_text,
     _resolve_model_path,
     _strip_comment,
 )
-from .types import VicGlobalMetadata, VicOutputStream
 
 
 def parse_vic_global(

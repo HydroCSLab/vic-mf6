@@ -6,7 +6,7 @@ import argparse
 import sys
 
 from .intersections import build_exchange_table
-from .types import ExchangeBuildError
+from .records import ExchangeBuildError
 
 
 def _parser() -> argparse.ArgumentParser:

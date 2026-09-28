@@ -23,8 +23,8 @@ from .global_file import (
     _resolve_exchange_output_prefix,
 )
 from .outputs import _read_window_outputs
+from .records import PreparedVicWindow, VicWindowResult
 from .restart_files import _state_candidates, _state_path, _write_head_file
-from .types import PreparedVicWindow, VicWindowResult
 
 
 class VicRuntime:

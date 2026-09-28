@@ -12,7 +12,7 @@ import numpy as np
 from ...config import ApplicationConfig
 from ...errors import PostprocessingError
 from ...exchange import ExchangeTable, SignedVolume
-from ..types import Mf6Geometry
+from ..records import Mf6Geometry
 from .time_series import _direction, _duration_days, _elapsed_days
 
 

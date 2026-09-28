@@ -9,8 +9,8 @@ import math
 from pathlib import Path
 
 from ..errors import ConfigurationError
+from .records import Mf6Period
 from .text import _positive_int_text, _strip_comment
-from .types import Mf6Period
 
 
 def _parse_tdis(path: Path) -> tuple[str, tuple[Mf6Period, ...]]:

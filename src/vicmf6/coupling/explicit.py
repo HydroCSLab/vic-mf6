@@ -7,6 +7,7 @@ import time
 from ..config import ApplicationConfig
 from ..errors import CouplingRuntimeError
 from ..schedule import build_windows
+from .records import WindowTimings
 from .reporting import write_window_diagnostics
 from .session import CouplingSession
 from .stages import (
@@ -15,7 +16,6 @@ from .stages import (
     map_groundwater_heads_to_vic,
     run_vic_and_broadcast_exchange,
 )
-from .types import WindowTimings
 
 
 def run_coupling(config: ApplicationConfig, *, logger: object) -> int:

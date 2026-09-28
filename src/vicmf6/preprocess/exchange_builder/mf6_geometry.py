@@ -11,8 +11,8 @@ from typing import Any
 import numpy as np
 
 from .dependencies import _optional_imports
+from .records import ExchangeBuildError, Mf6SourceCell
 from .summary import _stats
-from .types import ExchangeBuildError, Mf6SourceCell
 
 
 def _mf6_discretization(gwf: Any) -> str:

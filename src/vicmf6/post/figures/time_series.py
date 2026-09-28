@@ -7,7 +7,7 @@ from typing import Any
 
 import numpy as np
 
-from ..types import PostPaths
+from ..records import PostPaths
 from .output import _save
 
 

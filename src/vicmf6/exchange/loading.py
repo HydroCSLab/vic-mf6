@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 
 from ..errors import ExchangeTableError
-from .types import VicCell
+from .records import VicCell
 from .validation import (
     _REQUIRED_COLUMNS,
     _merge_vic_metadata,

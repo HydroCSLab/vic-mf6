@@ -15,7 +15,7 @@ import numpy as np
 
 from ..exchange import SignedVolume
 from ..mf6 import Mf6AdvanceResult
-from .types import GroundwaterStatistics, WindowTimings
+from .records import GroundwaterStatistics, WindowTimings
 
 
 class CouplingCommunicator:

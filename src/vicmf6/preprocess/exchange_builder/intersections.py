@@ -15,8 +15,8 @@ import numpy as np
 from ...exchange import ExchangeTable
 from .dependencies import _optional_imports
 from .mf6_geometry import load_mf6_cells
+from .records import BuildArtifacts, ExchangeBuildError
 from .summary import _coverage_stats, _stats, format_summary
-from .types import BuildArtifacts, ExchangeBuildError
 from .vic_geometry import load_vic_cells
 
 

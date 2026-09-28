@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .types import ExchangeBuildError
+from .records import ExchangeBuildError
 
 
 def _optional_imports():

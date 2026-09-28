@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from ..errors import ConfigurationError
-from .types import ApplicationConfig
+from .records import ApplicationConfig
 
 
 def _validate_cross_section_contract(config: ApplicationConfig) -> None:

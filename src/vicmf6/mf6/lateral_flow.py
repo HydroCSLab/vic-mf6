@@ -8,7 +8,7 @@ from __future__ import annotations
 import numpy as np
 
 from ..errors import Mf6RuntimeError
-from .types import LateralFlowDiagnostics
+from .records import LateralFlowDiagnostics
 
 
 def lateral_flow_diagnostics(

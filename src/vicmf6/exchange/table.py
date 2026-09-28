@@ -14,7 +14,7 @@ import numpy as np
 from ..errors import ExchangeTableError
 from .conservation import assert_signed_volume_close
 from .loading import read_exchange_table_columns, validate_exchange_records
-from .types import HeadContribution, MappingResult, SignedVolume, VicCell
+from .records import HeadContribution, MappingResult, SignedVolume, VicCell
 from .validation import (
     _immutable,
     _require_finite,

@@ -14,8 +14,8 @@ import numpy as np
 from ..exchange import SignedVolume, assert_net_volume_close, assert_signed_volume_close
 from ..mf6 import Mf6AdvanceResult
 from ..schedule import CouplingWindow
+from .records import BoundaryExchange, SurfaceExchange, WindowTimings
 from .session import CouplingSession
-from .types import BoundaryExchange, SurfaceExchange, WindowTimings
 
 _ZERO_VOLUME = SignedVolume(0.0, 0.0, 0.0)
 

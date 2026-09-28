@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 
 from ...config import ApplicationConfig
-from ..types import Mf6Geometry, Mf6HeadSeries
+from ..records import Mf6Geometry, Mf6HeadSeries
 from .time_series import _elapsed_days, _finite_or_none, _head_at_time
 
 
