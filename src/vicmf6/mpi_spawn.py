@@ -1,4 +1,14 @@
-"""launch one VIC Image Driver window as an MPI child of controller rank zero."""
+"""Launch a VIC window as MPI children of controller rank zero.
+
+Python owns Spawn and the parent's Disconnect. The small LD_PRELOAD helper in
+native/mpi_finalize_disconnect.c runs inside each VIC child and supplies the
+matching Disconnect before VIC calls PMPI_Finalize. It neither spawns nor kills
+ranks. The parent cannot execute a collective operation on a child's behalf.
+
+Retaining this helper preserves the tested native VIC binary and MPI shutdown
+path; removing it safely would require a corresponding change inside VIC.
+See docs/python-architecture.md for the parent/child lifecycle.
+"""
 
 from __future__ import annotations
 

@@ -42,8 +42,21 @@ def evaluate_acceptance(
         reference_path,
     )
 
-    checks: list[AcceptanceCheck] = []
+    checks = [
+        *check_window_conservation(config, window_rows),
+        *check_cumulative_exchange(config, summary),
+        *check_domain_mass_balance(config, summary),
+        *check_lateral_and_cell_budgets(summary),
+    ]
+    return AcceptanceResult(
+        passed=all(check.passed for check in checks), checks=tuple(checks)
+    )
 
+
+def check_window_conservation(
+    config: ApplicationConfig, window_rows: list[dict[str, Any]]
+) -> list[AcceptanceCheck]:
+    checks: list[AcceptanceCheck] = []
     expected_windows = int(
         round(
             (config.coupling.end_time - config.coupling.start_time).total_seconds()
@@ -132,6 +145,13 @@ def evaluate_acceptance(
             )
         )
 
+    return checks
+
+
+def check_cumulative_exchange(
+    config: ApplicationConfig, summary: dict[str, Any]
+) -> list[AcceptanceCheck]:
+    checks: list[AcceptanceCheck] = []
     cumulative_vic = summary["exchange_m3"]["vic"]
     cumulative_target = summary["exchange_m3"]["node_target"]
     checks.append(
@@ -165,6 +185,13 @@ def evaluate_acceptance(
             )
         )
 
+    return checks
+
+
+def check_domain_mass_balance(
+    config: ApplicationConfig, summary: dict[str, Any]
+) -> list[AcceptanceCheck]:
+    checks: list[AcceptanceCheck] = []
     mass = summary.get("mass_balance_m3") or {}
     if mass.get("available"):
         checks.append(
@@ -205,6 +232,11 @@ def evaluate_acceptance(
             )
         )
 
+    return checks
+
+
+def check_lateral_and_cell_budgets(summary: dict[str, Any]) -> list[AcceptanceCheck]:
+    checks: list[AcceptanceCheck] = []
     lateral_error = summary["errors"].get("maximum_lateral_pair_antisymmetry_m3_day")
     if lateral_error is not None:
         checks.append(
@@ -239,10 +271,7 @@ def evaluate_acceptance(
             )
         )
 
-    return AcceptanceResult(
-        passed=all(check.passed for check in checks),
-        checks=tuple(checks),
-    )
+    return checks
 
 
 def acceptance_as_dict(result: AcceptanceResult) -> dict[str, Any]:
