@@ -1,8 +1,11 @@
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
+import yaml
 
-from vicmf6.config import load_config
+from vicmf6.config import create_fresh_run_output_directories, load_config
 from vicmf6.errors import ConfigurationError
 from vicmf6.preflight import run_preflight
 
@@ -89,6 +92,98 @@ END DIMENSIONS
         encoding="utf-8",
     )
     return global_file, mf6 / "mfsim.nam", library, executable
+
+
+@pytest.fixture
+def minimal_config_path(tmp_path: Path) -> Path:
+    global_file, namefile, library, executable = _write_minimal_models(tmp_path)
+    path = tmp_path / "config.yml"
+    path.write_text(
+        yaml.safe_dump(
+            {
+                "mf6": {"namefile": str(namefile), "library": str(library)},
+                "vic": {"global_file": str(global_file), "executable": str(executable)},
+                "coupling": {
+                    "exchange_table": "exchange.csv",
+                    "interval_days": 1,
+                    "exchange_length_m": 100,
+                    "exchange_conductivity_scale": 0.001,
+                    "head_transform": "identity",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
+@pytest.mark.parametrize(
+    "field",
+    [
+        "interval_days",
+        "exchange_length_m",
+        "exchange_conductivity_scale",
+        "coverage_relative_tolerance",
+        "conservation_absolute_tolerance_m3",
+        "conservation_relative_tolerance",
+        "api_absolute_tolerance_m3_per_day",
+    ],
+)
+def test_config_rejects_nonfinite_coupling_values(minimal_config_path, field, value):
+    raw = yaml.safe_load(minimal_config_path.read_text())
+    raw["coupling"][field] = value
+    minimal_config_path.write_text(yaml.safe_dump(raw), encoding="utf-8")
+    with pytest.raises(ConfigurationError, match=rf"coupling\.{field} must be finite"):
+        load_config(minimal_config_path)
+
+
+def test_fresh_output_directories_preserve_prepared_model_inputs(minimal_config_path):
+    config = load_config(minimal_config_path)
+    config.run_directory.mkdir()
+    prepared_input = config.run_directory / "prepared-model.nam"
+    prepared_input.write_text("input", encoding="utf-8")
+    create_fresh_run_output_directories(config)
+    assert prepared_input.read_text() == "input"
+    assert config.vic.outputs_directory.is_dir()
+    assert config.vic.exchange_directory.is_dir()
+    assert config.coupling.diagnostics_directory.is_dir()
+    with pytest.raises(ConfigurationError, match="already exists"):
+        create_fresh_run_output_directories(config)
+
+
+@pytest.mark.parametrize(
+    "existing_directory", ["vic/outputs", "vic/exchange", "diagnostics"]
+)
+def test_cli_rejects_existing_outputs_before_opening_logs_or_models(
+    minimal_config_path, existing_directory, monkeypatch, capsys
+):
+    from vicmf6 import cli
+
+    config = load_config(minimal_config_path)
+    directory = config.run_directory / existing_directory
+    directory.mkdir(parents=True)
+    previous_output = directory / "previous-output"
+    previous_output.write_bytes(b"keep this result")
+    previous_paths = set(config.run_directory.rglob("*"))
+
+    def abort(code):
+        raise SystemExit(code)
+
+    def unexpected_log_creation(**kwargs):
+        pytest.fail("existing run must be rejected before logs are opened")
+
+    world = SimpleNamespace(Get_rank=lambda: 0, Abort=abort)
+    monkeypatch.setitem(
+        sys.modules, "mpi4py", SimpleNamespace(MPI=SimpleNamespace(COMM_WORLD=world))
+    )
+    monkeypatch.setattr(cli, "build_logger", unexpected_log_creation)
+    with pytest.raises(SystemExit) as failure:
+        cli.main(["run", "-c", str(minimal_config_path)])
+    assert failure.value.code == 1
+    assert f"run output directory already exists: {directory}" in capsys.readouterr().err
+    assert set(config.run_directory.rglob("*")) == previous_paths
+    assert previous_output.read_bytes() == b"keep this result"
 
 
 def test_minimal_config_discovers_model_owned_metadata(tmp_path: Path) -> None:

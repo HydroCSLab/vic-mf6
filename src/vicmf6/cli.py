@@ -8,7 +8,7 @@ import sys
 from dataclasses import replace
 from pathlib import Path
 
-from .config import load_config
+from .config import create_fresh_run_output_directories, load_config
 from .diagnostics import build_logger
 from .errors import VicMf6Error
 from .preflight import run_preflight
@@ -107,15 +107,19 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 2
         rank = int(MPI.COMM_WORLD.Get_rank())
-        logger = build_logger(
-            rank=rank,
-            diagnostics_directory=config.coupling.diagnostics_directory,
-            level_name=config.diagnostics.verbosity,
-            write_rank_logs=config.diagnostics.write_rank_logs,
-        )
+        logger = None
         try:
             if rank == 0:
                 summary = run_preflight(config)
+                create_fresh_run_output_directories(config)
+            MPI.COMM_WORLD.Barrier()
+            logger = build_logger(
+                rank=rank,
+                diagnostics_directory=config.coupling.diagnostics_directory,
+                level_name=config.diagnostics.verbosity,
+                write_rank_logs=config.diagnostics.write_rank_logs,
+            )
+            if rank == 0:
                 logger.info(
                     "preflight passed "
                     f"mf6_models={len(summary['mf6']['models'])} vic_cells={summary['coupling']['vic_cells']} overlaps={summary['coupling']['overlap_rows']}"
@@ -125,7 +129,10 @@ def main(argv: list[str] | None = None) -> int:
 
             return run_coupling(config, logger=logger)
         except Exception as exc:
-            logger.exception(f"coupling failed: {exc}")
+            if logger is None:
+                print(f"vicmf6 run failed on rank {rank}: {exc}", file=sys.stderr)
+            else:
+                logger.exception(f"coupling failed: {exc}")
             # a single rank leaving a collective path can deadlock every peer.
             # abort the world so failure is immediate and carries rank context.
             MPI.COMM_WORLD.Abort(1)

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-import shutil
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -82,8 +81,6 @@ class VicRuntime:
 
         window_tag = f"window-{window.index:04d}"
         output_directory = self.config.outputs_directory / window_tag
-        if output_directory.exists():
-            shutil.rmtree(output_directory)
         output_directory.mkdir(parents=True, exist_ok=False)
 
         head_directory = self.config.exchange_directory / "heads"
@@ -103,7 +100,7 @@ class VicRuntime:
         state_prefix = state_directory / "state"
         expected_state = _state_path(state_prefix, window.end)
         if expected_state.exists():
-            expected_state.unlink()
+            raise VicRuntimeError(f"VIC restart already exists: {expected_state}")
 
         global_file = global_directory / f"{window_tag}.global.txt"
         rendered = _render_global_parameter_file(
@@ -422,7 +419,7 @@ def _sum_time_axis(array: np.ndarray, variable_name: str, path: Path) -> np.ndar
     if array.ndim == 2:
         return array
     if array.ndim == 3:
-        return np.nansum(array, axis=0, dtype=np.float64)
+        return np.sum(array, axis=0, dtype=np.float64)
     raise VicRuntimeError(
         f"{variable_name} has unsupported shape {array.shape} in {path}; expected (y,x) or (time,y,x)"
     )

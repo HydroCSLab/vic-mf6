@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -334,13 +335,21 @@ def _validate_paths(config: ApplicationConfig) -> None:
         )
 
 
-def create_run_directories(config: ApplicationConfig) -> None:
-    """create only directories that are owned by the coupled run."""
+def create_fresh_run_output_directories(config: ApplicationConfig) -> None:
+    """reserve new output directories before any rank opens logs or models."""
 
-    config.run_directory.mkdir(parents=True, exist_ok=True)
-    config.vic.outputs_directory.mkdir(parents=True, exist_ok=True)
-    config.vic.exchange_directory.mkdir(parents=True, exist_ok=True)
-    config.coupling.diagnostics_directory.mkdir(parents=True, exist_ok=True)
+    directories = (
+        config.coupling.diagnostics_directory,
+        config.vic.outputs_directory,
+        config.vic.exchange_directory,
+    )
+    for directory in directories:
+        if directory.exists():
+            raise ConfigurationError(
+                f"run output directory already exists: {directory}; choose a new run directory"
+            )
+    for directory in directories:
+        directory.mkdir(parents=True, exist_ok=False)
 
 
 def config_as_dict(config: ApplicationConfig) -> dict[str, Any]:
@@ -487,9 +496,12 @@ def _nonnegative_float(raw: Any, field_name: str) -> float:
 
 def _float(raw: Any, field_name: str) -> float:
     try:
-        return float(raw)
+        value = float(raw)
     except (TypeError, ValueError) as exc:
         raise ConfigurationError(f"{field_name} must be numeric") from exc
+    if not math.isfinite(value):
+        raise ConfigurationError(f"{field_name} must be finite")
+    return value
 
 
 def _bool(raw: Any, field_name: str) -> bool:
