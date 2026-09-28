@@ -40,7 +40,7 @@ diagnostics="$run_dir/diagnostics"
 printf '%s\n' "[INFO] replacing generated Stehekin products under $run_dir"
 rm -rf -- "$diagnostics" "$run_dir/mf6" "$run_dir/vic" "$run_dir/postprocessing"
 
-"$python_exe" -E "$example_dir/build_mf6.py"
+"$python_exe" -E "$example_dir/create_mf6.py"
 "$repo_dir/scripts/build_stehekin_exchange_table.sh" "$config"
 "$repo_dir/native/build_disconnect.sh"
 "$repo_dir/vicmf6" inspect -c "$config"
