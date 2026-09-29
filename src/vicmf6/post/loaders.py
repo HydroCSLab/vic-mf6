@@ -497,7 +497,7 @@ def _sum_time_axis(array: np.ndarray, variable_name: str, path: Path) -> np.ndar
     if array.ndim == 2:
         return array
     if array.ndim == 3:
-        return np.nansum(array, axis=0, dtype=np.float64)
+        return np.sum(array, axis=0, dtype=np.float64)
     raise PostprocessingError(
         f"{variable_name} has unsupported shape {array.shape} in {path}; "
         "expected (y,x) or (time,y,x)"

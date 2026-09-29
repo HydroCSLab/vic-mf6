@@ -7,7 +7,7 @@ from typing import Any
 
 import numpy as np
 
-from .config import ApplicationConfig, create_run_directories
+from .config import ApplicationConfig
 from .diagnostics import DiagnosticsWriter, make_window_diagnostics
 from .errors import CouplingRuntimeError
 from .exchange import (
@@ -44,7 +44,6 @@ def run_coupling(config: ApplicationConfig, *, logger: object) -> int:
 
     model_names = None
     if rank == 0:
-        create_run_directories(config)
         model_names = [model.name for model in config.mf6_source.models]
     model_names = world.bcast(model_names, root=0)
 

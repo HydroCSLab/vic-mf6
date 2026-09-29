@@ -135,6 +135,10 @@ launch. It does not relocate the configured MODFLOW 6 workspace. Use a copied
 configuration and model workspace when an existing MF6 run must remain
 untouched.
 
+The coupler requires fresh VIC output, exchange, and diagnostics directories.
+It refuses to reuse them, even if empty, before opening rank logs or models.
+The run directory itself may already contain prepared model inputs.
+
 ## Outputs and postprocessing
 
 Coupler-owned products are written below the configured run directory:
