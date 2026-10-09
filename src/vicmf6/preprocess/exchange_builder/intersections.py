@@ -27,6 +27,8 @@ def build_exchange_table(
     output: str | Path,
     mf6_crs: str | None = None,
     interface_elevation_m: float | None = None,
+    interface_from_parameters: bool = False,
+    mf6_interface_bound: str | None = None,
     require_full_vic_coverage: bool = True,
     coverage_tolerance: float = 5.0e-4,
     force: bool = False,
@@ -36,6 +38,8 @@ def build_exchange_table(
     )
     if coverage_tolerance < 0.0:
         raise ExchangeBuildError("coverage_tolerance must be nonnegative")
+    if mf6_interface_bound not in {None, "top", "bottom"}:
+        raise ExchangeBuildError("mf6_interface_bound must be 'top' or 'bottom'")
     output_path = Path(output).expanduser().resolve()
     if output_path.exists() and not force:
         raise ExchangeBuildError(
@@ -46,6 +50,7 @@ def build_exchange_table(
     vic_cells, vic_info = load_vic_cells(
         vic_global,
         interface_elevation_m=interface_elevation_m,
+        interface_from_parameters=interface_from_parameters,
     )
     mf6_cells, mf6_info = load_mf6_cells(mf6_sim, mf6_crs=mf6_crs)
     target_crs = CRS.from_user_input(mf6_info["grid_crs"])
@@ -125,6 +130,15 @@ def build_exchange_table(
                     "mf6_model": mf6_cell.model,
                     "mf6_node": mf6_cell.node,
                     "mf6_area_m2": mf6_cell.area_m2,
+                    "mf6_interface_elevation_m": (
+                        None
+                        if mf6_interface_bound is None
+                        else (
+                            mf6_cell.top_m
+                            if mf6_interface_bound == "top"
+                            else mf6_cell.bottom_m
+                        )
+                    ),
                     "overlap_area_m2": overlap_area,
                 }
             )
@@ -152,6 +166,7 @@ def build_exchange_table(
         "mf6_model",
         "mf6_node",
         "mf6_area_m2",
+        "mf6_interface_elevation_m",
         "overlap_area_m2",
     ]
     temporary = output_path.with_suffix(output_path.suffix + ".tmp")

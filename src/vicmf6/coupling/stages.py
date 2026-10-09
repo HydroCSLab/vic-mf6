@@ -55,6 +55,10 @@ def run_vic_and_broadcast_exchange(
     depth = np.empty(session.exchange_table.vic_cell_count, dtype=np.float64)
     source_volume = _ZERO_VOLUME
     water_error = None
+    runoff = None
+    runoff_source = None
+    if session.runoff_table is not None:
+        runoff = np.empty(session.exchange_table.vic_cell_count, dtype=np.float64)
     if session.vic is not None:
         assert mapped_head_m is not None
         start = time.perf_counter()
@@ -72,9 +76,22 @@ def run_vic_and_broadcast_exchange(
         start = time.perf_counter()
         depth[:] = session.exchange_table.extract_vic_values(result.exchange_grid_mm)
         source_volume = session.exchange_table.source_volume_from_vic_depth(depth)
+        if runoff is not None:
+            if result.runoff_grid_mm is None:
+                raise RuntimeError("configured VIC runoff output was not returned")
+            runoff[:] = session.exchange_table.extract_vic_values(result.runoff_grid_mm)
+            runoff_source = session.runoff_table.source_volume(runoff)
         timings.mapping_seconds += time.perf_counter() - start
     session.parallel.broadcast_vic_depth(depth)
-    return SurfaceExchange(depth, source_volume, water_error)
+    if runoff is not None:
+        session.parallel.broadcast_vic_runoff(runoff)
+    return SurfaceExchange(
+        depth,
+        source_volume,
+        water_error,
+        runoff_depth_mm=runoff,
+        runoff_source_volume=runoff_source,
+    )
 
 
 def map_exchange_and_check_conservation(
@@ -125,6 +142,7 @@ def advance_groundwater_and_check_application(
     session: CouplingSession,
     window: CouplingWindow,
     boundary: BoundaryExchange,
+    surface: SurfaceExchange,
     timings: WindowTimings,
 ) -> tuple[Mf6AdvanceResult | None, SignedVolume | None]:
     """Hold the mapped rate fixed and advance MF6 to the same window boundary.
@@ -135,20 +153,32 @@ def advance_groundwater_and_check_application(
     """
     advance = None
     local_applied = _ZERO_VOLUME
+    local_runoff = _ZERO_VOLUME
     if session.mf6 is not None:
         assert boundary.volume_by_node_m3 is not None
         target_days = (
             window.end - session.config.mf6.start_time
         ).total_seconds() / 86400.0
         start = time.perf_counter()
+        runoff_rates = None
+        if session.runoff_table is not None:
+            assert surface.runoff_depth_mm is not None
+            runoff_mapping = session.runoff_table.map_to_reaches(
+                surface.runoff_depth_mm
+            )
+            runoff_rates = runoff_mapping.volume_by_reach_m3 / window.duration_days
         advance = session.mf6.advance_to(
             target_days,
             boundary.volume_by_node_m3,
             api_tolerance_m3_per_day=session.config.coupling.api_absolute_tolerance_m3_per_day,
+            sfr_runoff_rates_m3_per_day=runoff_rates,
         )
         timings.mf6_seconds = time.perf_counter() - start
         local_applied = advance.applied
-    totals = session.parallel.reduce_signed_volumes(local_applied)
+        if session.runoff_table is not None:
+            assert advance.applied_runoff is not None
+            local_runoff = advance.applied_runoff
+    totals = session.parallel.reduce_signed_volumes(local_applied, local_runoff)
     applied = None
     if totals is not None:
         applied = totals[0]
@@ -161,4 +191,12 @@ def advance_groundwater_and_check_application(
             relative_tolerance=coupling.conservation_relative_tolerance,
             label="MF6 API application",
         )
+        if surface.runoff_source_volume is not None:
+            assert_signed_volume_close(
+                surface.runoff_source_volume,
+                totals[1],
+                absolute_tolerance_m3=coupling.conservation_absolute_tolerance_m3,
+                relative_tolerance=coupling.conservation_relative_tolerance,
+                label="VIC runoff-to-SFR application",
+            )
     return advance, applied

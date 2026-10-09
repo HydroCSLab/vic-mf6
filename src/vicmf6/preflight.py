@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from bisect import bisect_left
 
 from .config import ApplicationConfig
 from .errors import ConfigurationError
@@ -39,6 +40,8 @@ def run_preflight(config: ApplicationConfig) -> dict[str, object]:
 
     if config.vic.head_transform == "pressure_head_from_interface_elevation":
         _ = exchange.vic_interface_elevations_m()
+    if config.vic.head_transform == "pressure_head_from_mf6_interface_elevation":
+        _ = exchange.vic_mf6_interface_elevations_m()
 
     return {
         "vic": {
@@ -91,9 +94,10 @@ def _validate_mf6_coupling_boundaries(
     tolerance = 1.0e-10
     for window in windows:
         requested = (window.end - config.coupling.start_time).total_seconds() / 86400.0
+        index = bisect_left(boundaries, requested)
         if not any(
             math.isclose(requested, value, rel_tol=0.0, abs_tol=tolerance)
-            for value in boundaries
+            for value in boundaries[max(0, index - 1) : index + 1]
         ):
             raise ConfigurationError(
                 "an explicit coupling boundary does not coincide with an MF6 time-step boundary: "

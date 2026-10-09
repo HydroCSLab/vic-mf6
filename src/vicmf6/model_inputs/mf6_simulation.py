@@ -99,6 +99,7 @@ def _parse_mf6_solution_groups(
     known = {model.name for model in models}
     assignments: dict[str, list[int]] = {name: [] for name in known}
     current_group: int | None = None
+    solution_id = 0
 
     for raw_line in lines:
         line = _strip_comment(raw_line)
@@ -117,29 +118,36 @@ def _parse_mf6_solution_groups(
                 raise ConfigurationError(
                     f"invalid SOLUTIONGROUP identifier in {source}: {tokens[2]}"
                 ) from exc
+            if current_group != 1:
+                raise ConfigurationError("MF6 XMI supports only SOLUTIONGROUP 1")
             continue
         if upper[:2] == ["END", "SOLUTIONGROUP"]:
             current_group = None
             continue
-        if current_group is None or not upper[0].startswith("IMS"):
+        if current_group is None or upper[0] not in {"IMS6", "EMS6"}:
             continue
+        # XMI addresses numerical solutions, not their enclosing group.
+        solution_id += 1
         for model_name in upper[2:]:
             if model_name in assignments:
-                assignments[model_name].append(current_group)
+                if upper[0] != "IMS6":
+                    raise ConfigurationError(
+                        f"GWF model {model_name} requires an IMS6 solution"
+                    )
+                assignments[model_name].append(solution_id)
 
     resolved: dict[str, int] = {}
     for model_name in sorted(known):
-        groups = assignments[model_name]
-        if not groups:
+        solutions = assignments[model_name]
+        if not solutions:
             raise ConfigurationError(
                 f"GWF model {model_name} is not assigned to a SOLUTIONGROUP in {source}"
             )
-        unique = sorted(set(groups))
-        if len(unique) != 1:
+        if len(solutions) != 1:
             raise ConfigurationError(
-                f"GWF model {model_name} is assigned to multiple solution groups in {source}: {unique}"
+                f"GWF model {model_name} must be assigned to exactly one IMS6 solution in {source}: {solutions}"
             )
-        resolved[model_name] = unique[0]
+        resolved[model_name] = solutions[0]
     return resolved
 
 

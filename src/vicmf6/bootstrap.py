@@ -6,6 +6,22 @@ import os
 import sys
 
 
+def configure_thread_environment() -> None:
+    """Set defaults before NumPy or native solvers create their thread pools.
+
+    Each controller/worker process runs this at CLI startup. Explicit shell
+    settings take precedence; vic.omp_threads controls only spawned VIC ranks.
+    """
+    for name in (
+        "OMP_NUM_THREADS",
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "NUMEXPR_NUM_THREADS",
+    ):
+        os.environ.setdefault(name, "1")
+    os.environ.setdefault("OMP_DYNAMIC", "FALSE")
+
+
 def main() -> int:
     """re-exec the cli with the same interpreter and an isolated python path."""
     environment = os.environ.copy()

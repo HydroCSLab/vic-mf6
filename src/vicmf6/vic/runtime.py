@@ -7,6 +7,7 @@ NetCDF interpretation live in separate modules so this lifecycle stays visible."
 from __future__ import annotations
 
 import time
+from logging import Logger
 from pathlib import Path
 
 import numpy as np
@@ -22,7 +23,7 @@ from .global_file import (
     _render_global_parameter_file,
     _resolve_exchange_output_prefix,
 )
-from .outputs import _read_window_outputs
+from .outputs import read_vic_window_outputs
 from .records import PreparedVicWindow, VicWindowResult
 from .restart_files import _state_candidates, _state_path, _write_head_file
 
@@ -35,7 +36,7 @@ class VicRuntime:
         config: VicConfig,
         exchange_table: ExchangeTable,
         *,
-        logger: object,
+        logger: Logger,
     ) -> None:
         self.config = config
         self.exchange_table = exchange_table
@@ -119,9 +120,7 @@ class VicRuntime:
         if not _is_whole_day(window.duration_days):
             environment["VIC_ALLOW_PARTIAL_DAY"] = "1"
 
-        _log(
-            self.logger,
-            "info",
+        self.logger.info(
             f"prepared VIC {window_tag} records={records} head_min={np.min(transformed_head):.6f} head_max={np.max(transformed_head):.6f}",
         )
         return PreparedVicWindow(
@@ -164,14 +163,16 @@ class VicRuntime:
         else:
             accepted_state = prepared.expected_state_file
 
-        exchange, water_error = _read_window_outputs(
+        exchange, water_error, runoff = read_vic_window_outputs(
             prepared.output_directory,
             prefix=self.output_prefix,
             exchange_variable=self.config.exchange_variable,
+            runoff_variable=self.config.runoff_variable,
         )
         output_read_seconds = time.perf_counter() - read_start
         return VicWindowResult(
             exchange_grid_mm=exchange,
+            runoff_grid_mm=runoff,
             state_file=accepted_state,
             maximum_water_error_mm=water_error,
             spawn_seconds=spawn_seconds,
@@ -218,9 +219,3 @@ class VicRuntime:
         raise VicRuntimeError(
             f"unsupported VIC coordinate shapes lat={lat.shape} lon={lon.shape}"
         )
-
-
-def _log(logger: object, level: str, message: str) -> None:
-    method = getattr(logger, level, None)
-    if callable(method):
-        method(message)

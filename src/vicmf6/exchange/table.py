@@ -39,6 +39,7 @@ class ExchangeTable:
         overlap_model: np.ndarray,
         overlap_mf6_node_zero: np.ndarray,
         overlap_area_m2: np.ndarray,
+        overlap_mf6_interface_elevation_m: np.ndarray,
     ) -> None:
         self.path = path
         self.vic_cells = vic_cells
@@ -46,6 +47,9 @@ class ExchangeTable:
         self._overlap_model = _immutable(overlap_model, object)
         self._overlap_mf6_node_zero = _immutable(overlap_mf6_node_zero, np.int64)
         self._overlap_area_m2 = _immutable(overlap_area_m2, np.float64)
+        self._overlap_mf6_interface_elevation_m = _immutable(
+            overlap_mf6_interface_elevation_m, np.float64
+        )
         self._model_names = tuple(
             dict.fromkeys(str(value) for value in self._overlap_model)
         )
@@ -79,6 +83,9 @@ class ExchangeTable:
             overlap_model=self._overlap_model[indices],
             overlap_mf6_node_zero=self._overlap_mf6_node_zero[indices],
             overlap_area_m2=self._overlap_area_m2[indices],
+            overlap_mf6_interface_elevation_m=(
+                self._overlap_mf6_interface_elevation_m[indices]
+            ),
         )
 
     @classmethod
@@ -161,6 +168,26 @@ class ExchangeTable:
         return np.asarray(
             [cell.interface_elevation_m for cell in self.vic_cells], dtype=np.float64
         )
+
+    def vic_mf6_interface_elevations_m(self) -> np.ndarray:
+        """Return the overlap-area-weighted MF6 interface for each VIC cell."""
+        elevations = self._overlap_mf6_interface_elevation_m
+        if np.any(~np.isfinite(elevations)):
+            raise ExchangeTableError(
+                "mf6_interface_elevation_m is required for "
+                "pressure_head_from_mf6_interface_elevation"
+            )
+        numerator = np.bincount(
+            self._overlap_vic_position,
+            weights=elevations * self._overlap_area_m2,
+            minlength=self.vic_cell_count,
+        )
+        denominator = np.bincount(
+            self._overlap_vic_position,
+            weights=self._overlap_area_m2,
+            minlength=self.vic_cell_count,
+        )
+        return numerator / denominator
 
     def extract_vic_values(self, full_grid: np.ndarray) -> np.ndarray:
         """extract coupled VIC values by row/column without using vic_id as an array index."""
@@ -308,6 +335,8 @@ class ExchangeTable:
             return head.copy()
         if normalized == "pressure_head_from_interface_elevation":
             return head - self.vic_interface_elevations_m()
+        if normalized == "pressure_head_from_mf6_interface_elevation":
+            return head - self.vic_mf6_interface_elevations_m()
         raise ExchangeTableError(f"unsupported VIC head transform: {mode}")
 
     def assert_full_mapping_conservation(

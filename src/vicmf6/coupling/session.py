@@ -8,6 +8,7 @@ VIC cell ordering so time-varying broadcasts never need to send identifiers.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from logging import Logger
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,7 @@ from ..config import ApplicationConfig
 from ..diagnostics import DiagnosticsWriter
 from ..errors import CouplingRuntimeError
 from ..exchange import ExchangeTable
+from ..exchange.runoff import SurfaceRunoffTable
 from ..mf6 import Mf6Runtime
 from ..vic import VicRuntime
 from .parallel import CouplingCommunicator
@@ -25,12 +27,13 @@ from .parallel import CouplingCommunicator
 @dataclass
 class CouplingSession:
     config: ApplicationConfig
-    logger: object
+    logger: Logger
     parallel: CouplingCommunicator
     worker_comm: Any
     model_names: list[str]
     exchange_table: ExchangeTable
     head_overlap_area_m2: np.ndarray | None
+    runoff_table: SurfaceRunoffTable | None = None
     mf6: Mf6Runtime | None = None
     vic: VicRuntime | None = None
     diagnostics: DiagnosticsWriter | None = None
@@ -38,14 +41,16 @@ class CouplingSession:
 
     @classmethod
     def initialize(
-        cls, config: ApplicationConfig, logger: object, mpi: Any
+        cls, config: ApplicationConfig, logger: Logger, mpi: Any
     ) -> CouplingSession:
         parallel = CouplingCommunicator(mpi.COMM_WORLD, mpi)
         world = parallel.world
         model_names = world.bcast(
-            [model.name for model in config.mf6_source.models]
-            if parallel.is_controller
-            else None,
+            (
+                [model.name for model in config.mf6_source.models]
+                if parallel.is_controller
+                else None
+            ),
             root=0,
         )
         expected_size = len(model_names) + 1
@@ -80,7 +85,34 @@ class CouplingSession:
         worker_comm = world.Split(
             1 if not parallel.is_controller else mpi.UNDEFINED, parallel.rank
         )
-        session = cls(config, logger, parallel, worker_comm, model_names, table, None)
+        runoff_table = None
+        runoff_partitions = [None] * expected_size
+        if parallel.is_controller and config.coupling.surface_runoff_table is not None:
+            runoff_table = SurfaceRunoffTable.from_csv(
+                config.coupling.surface_runoff_table, table.vic_cells
+            )
+            if {name.casefold() for name in model_names} != {
+                name.casefold() for name in runoff_table.model_names
+            }:
+                raise CouplingRuntimeError(
+                    "surface-runoff table model names do not match GWF models: "
+                    f"table={runoff_table.model_names} mf6={model_names}"
+                )
+            runoff_partitions = [runoff_table] + [
+                runoff_table.for_model(name) for name in model_names
+            ]
+        local_runoff_table = world.scatter(runoff_partitions, root=0)
+        runoff_table = local_runoff_table
+        session = cls(
+            config,
+            logger,
+            parallel,
+            worker_comm,
+            model_names,
+            table,
+            None,
+            runoff_table,
+        )
 
         if parallel.is_controller:
             session.vic = VicRuntime(config.vic, table, logger=logger)
@@ -101,8 +133,13 @@ class CouplingSession:
                 model_name=model_name,
                 coupled_nodes=table.coupled_nodes(model_name),
                 logger=logger,
+                sfr_runoff_package=(
+                    runoff_table.package_name if runoff_table is not None else None
+                ),
             )
-            session.mf6.initialize(worker_comm.py2f())
+            session.mf6.initialize(
+                worker_comm.py2f(), mpi_comm_size=worker_comm.Get_size()
+            )
             local_area = table.head_overlap_area_for_model(model_name)
 
         # Grid geometry stays fixed throughout the run. The area denominator is

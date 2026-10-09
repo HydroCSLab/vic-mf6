@@ -96,10 +96,59 @@ def _as_rectilinear_coordinates(
     )
 
 
+def _load_vic_soil_base(
+    parameter_path: Path,
+    shape: tuple[int, int],
+    Dataset: Any,
+    active: np.ndarray | None = None,
+) -> tuple[np.ndarray, dict[str, Any]]:
+    """Read spatial soil-base elevation as terrain minus total soil depth."""
+    if not parameter_path.is_file():
+        raise ExchangeBuildError(f"VIC PARAMETERS file was not found: {parameter_path}")
+    with Dataset(parameter_path, "r") as dataset:
+        for required in ("elev", "depth"):
+            if required not in dataset.variables:
+                raise ExchangeBuildError(
+                    f"VIC parameter file {parameter_path} is missing variable {required!r}"
+                )
+        elevation = np.asarray(
+            np.ma.filled(dataset.variables["elev"][:], np.nan), dtype=np.float64
+        )
+        depth = np.asarray(
+            np.ma.filled(dataset.variables["depth"][:], np.nan), dtype=np.float64
+        )
+    if elevation.shape != shape:
+        raise ExchangeBuildError(
+            f"VIC elev shape {elevation.shape} does not match domain shape {shape}"
+        )
+    if depth.ndim != 3 or depth.shape[1:] != shape:
+        raise ExchangeBuildError(
+            "VIC depth must have dimensions (soil_layer, y, x); "
+            f"got {depth.shape} for domain {shape}"
+        )
+    selected = (
+        np.ones(shape, dtype=bool) if active is None else np.asarray(active, dtype=bool)
+    )
+    if selected.shape != shape:
+        raise ExchangeBuildError("active VIC mask does not match the parameter grid")
+    if np.any(~np.isfinite(depth[:, selected])) or np.any(depth[:, selected] <= 0.0):
+        raise ExchangeBuildError(
+            "VIC soil depth contains missing or nonpositive values in active cells"
+        )
+    total_depth = np.sum(depth, axis=0)
+    return elevation - total_depth, {
+        "method": "PARAMETERS elev minus sum(depth)",
+        "parameter_file": str(parameter_path),
+        "soil_layers": int(depth.shape[0]),
+        "soil_depth_m": _stats(total_depth[selected]),
+    }
+
+
 def load_vic_cells(
     global_file: str | Path,
     *,
     interface_elevation_m: float | None = None,
+    interface_from_parameters: bool = False,
 ) -> tuple[list[VicSourceCell], dict[str, Any]]:
     Dataset, _flopy, _CRS, _Transformer, Polygon, _transform, _STRtree = (
         _optional_imports()
@@ -161,6 +210,27 @@ def load_vic_cells(
             f"VIC area shape {area.shape} does not match mask shape {mask.shape}"
         )
 
+    if interface_elevation_m is not None and interface_from_parameters:
+        raise ExchangeBuildError(
+            "choose either a constant interface elevation or VIC parameter elevations"
+        )
+    interface_grid = None
+    interface_info: dict[str, Any] = {
+        "method": "constant" if interface_elevation_m is not None else "unspecified"
+    }
+    if interface_from_parameters:
+        if "PARAMETERS" not in parsed:
+            raise ExchangeBuildError(
+                f"VIC global file does not declare PARAMETERS: {global_path}"
+            )
+        interface_grid, interface_info = _load_vic_soil_base(
+            Path(parsed["PARAMETERS"]), mask.shape, Dataset, active=active
+        )
+        if np.any(~np.isfinite(interface_grid[active])):
+            raise ExchangeBuildError(
+                "VIC soil-base elevation is missing in one or more active cells"
+            )
+
     # Geodesic area is used only when the domain file does not provide VIC AREA.
     geod = None
     if area is None:
@@ -199,9 +269,13 @@ def load_vic_cells(
                 longitude=float(col_lon[col]),
                 polygon_lonlat=polygon,
                 interface_elevation_m=(
-                    None
-                    if interface_elevation_m is None
-                    else float(interface_elevation_m)
+                    float(interface_grid[row, col])
+                    if interface_grid is not None
+                    else (
+                        None
+                        if interface_elevation_m is None
+                        else float(interface_elevation_m)
+                    )
                 ),
             )
         )
@@ -225,5 +299,13 @@ def load_vic_cells(
         "interface_elevation_m": (
             None if interface_elevation_m is None else float(interface_elevation_m)
         ),
+        "interface_elevation": {
+            **interface_info,
+            "active_elevation_m": _stats(
+                cell.interface_elevation_m
+                for cell in cells
+                if cell.interface_elevation_m is not None
+            ),
+        },
     }
     return cells, info

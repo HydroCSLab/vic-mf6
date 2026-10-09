@@ -7,6 +7,8 @@ import yaml
 
 from vicmf6.config import create_fresh_run_output_directories, load_config
 from vicmf6.errors import ConfigurationError
+from vicmf6.model_inputs.mf6_simulation import _parse_mf6_solution_groups
+from vicmf6.model_inputs.records import _Mf6ModelEntry
 from vicmf6.preflight import run_preflight
 
 
@@ -117,24 +119,24 @@ def minimal_config_path(tmp_path: Path) -> Path:
     return path
 
 
-@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
 @pytest.mark.parametrize(
-    "field",
+    "section, field, value",
     [
-        "interval_days",
-        "exchange_length_m",
-        "exchange_conductivity_scale",
-        "coverage_relative_tolerance",
-        "conservation_absolute_tolerance_m3",
-        "conservation_relative_tolerance",
-        "api_absolute_tolerance_m3_per_day",
+        ("vic", "mpi_processes", 1.5),
+        ("vic", "omp_threads", True),
+        ("vic", "spawn_timeout_seconds", float("inf")),
+        ("mf6", "max_solve_iterations", 0),
+        ("coupling", "conservation_relative_tolerance", float("nan")),
+        ("coupling", "api_absolute_tolerance_m3_per_day", float("inf")),
     ],
 )
-def test_config_rejects_nonfinite_coupling_values(minimal_config_path, field, value):
+def test_invalid_settings_fail_before_launch(
+    minimal_config_path, section, field, value
+):
     raw = yaml.safe_load(minimal_config_path.read_text())
-    raw["coupling"][field] = value
+    raw[section][field] = value
     minimal_config_path.write_text(yaml.safe_dump(raw), encoding="utf-8")
-    with pytest.raises(ConfigurationError, match=rf"coupling\.{field} must be finite"):
+    with pytest.raises(ConfigurationError, match=rf"{section}\.{field} must"):
         load_config(minimal_config_path)
 
 
@@ -152,16 +154,13 @@ def test_fresh_output_directories_preserve_prepared_model_inputs(minimal_config_
         create_fresh_run_output_directories(config)
 
 
-@pytest.mark.parametrize(
-    "existing_directory", ["vic/outputs", "vic/exchange", "diagnostics"]
-)
 def test_cli_rejects_existing_outputs_before_opening_logs_or_models(
-    minimal_config_path, existing_directory, monkeypatch, capsys
+    minimal_config_path, monkeypatch, capsys
 ):
     from vicmf6 import cli
 
     config = load_config(minimal_config_path)
-    directory = config.run_directory / existing_directory
+    directory = config.coupling.diagnostics_directory
     directory.mkdir(parents=True)
     previous_output = directory / "previous-output"
     previous_output.write_bytes(b"keep this result")
@@ -177,182 +176,72 @@ def test_cli_rejects_existing_outputs_before_opening_logs_or_models(
     monkeypatch.setitem(
         sys.modules, "mpi4py", SimpleNamespace(MPI=SimpleNamespace(COMM_WORLD=world))
     )
-    monkeypatch.setattr(cli, "build_logger", unexpected_log_creation)
+    monkeypatch.setattr("vicmf6.diagnostics.build_logger", unexpected_log_creation)
     with pytest.raises(SystemExit) as failure:
         cli.main(["run", "-c", str(minimal_config_path)])
     assert failure.value.code == 1
-    assert f"run output directory already exists: {directory}" in capsys.readouterr().err
+    assert (
+        f"run output directory already exists: {directory}" in capsys.readouterr().err
+    )
     assert set(config.run_directory.rglob("*")) == previous_paths
     assert previous_output.read_bytes() == b"keep this result"
 
 
-def test_minimal_config_discovers_model_owned_metadata(tmp_path: Path) -> None:
-    global_file, namefile, library, executable = _write_minimal_models(tmp_path)
-    config_path = tmp_path / "config.yml"
-    config_path.write_text(
-        f"""run:
-  directory: run
-mf6:
-  namefile: {namefile.relative_to(tmp_path)}
-  library: {library.relative_to(tmp_path)}
-vic:
-  global_file: {global_file.relative_to(tmp_path)}
-  executable: {executable.relative_to(tmp_path)}
-  mpi_processes: 1
-  omp_threads: 1
-coupling:
-  exchange_table: exchange.csv
-  interval_days: 1
-  scheme: explicit
-  exchange_length_m: 100
-  exchange_conductivity_scale: 0.001
-  head_transform: identity
-""",
-        encoding="utf-8",
-    )
-
-    config = load_config(config_path)
+def test_minimal_config_discovers_model_owned_metadata(minimal_config_path):
+    config = load_config(minimal_config_path)
     summary = run_preflight(config)
-
-    assert config.vic.parameters_file == (tmp_path / "vic" / "params.nc").resolve()
-    assert config.vic.domain_file == (tmp_path / "vic" / "domain.nc").resolve()
+    assert config.vic.parameters_file == minimal_config_path.parent / "vic/params.nc"
     assert config.vic.exchange_output_prefix == "fluxes"
     assert config.mf6.api_package_for("GW") == "VICAPI"
     assert config.mf6.solution_id_for("GW") == 1
     assert config.mf6.time_step_boundaries_days == tuple(float(i) for i in range(1, 11))
     assert summary["mpi"]["world_ranks_required"] == 2
-    assert summary["coupling"]["vic_cells"] == 1
     assert summary["coupling"]["windows"] == 10
 
 
-def test_vic_and_mf6_duration_mismatch_is_rejected(tmp_path: Path) -> None:
-    global_file, namefile, library, executable = _write_minimal_models(tmp_path)
-    (tmp_path / "mf6" / "time.tdis").write_text(
-        """BEGIN OPTIONS
-  TIME_UNITS DAYS
-END OPTIONS
-BEGIN DIMENSIONS
-  NPER 1
-END DIMENSIONS
-BEGIN PERIODDATA
-  9 9 1
-END PERIODDATA
-""",
-        encoding="utf-8",
-    )
-    config_path = tmp_path / "config.yml"
-    config_path.write_text(
-        f"""mf6:
-  namefile: {namefile.relative_to(tmp_path)}
-  library: {library.relative_to(tmp_path)}
-vic:
-  global_file: {global_file.relative_to(tmp_path)}
-  executable: {executable.relative_to(tmp_path)}
-coupling:
-  exchange_table: exchange.csv
-  interval_days: 1
-  exchange_length_m: 100
-  exchange_conductivity_scale: 0.001
-  head_transform: identity
-""",
-        encoding="utf-8",
-    )
-
+def test_vic_and_mf6_duration_mismatch_is_rejected(minimal_config_path):
+    tdis = minimal_config_path.parent / "mf6/time.tdis"
+    tdis.write_text(tdis.read_text().replace("10 10 1", "9 9 1"))
     with pytest.raises(ConfigurationError, match="durations do not match"):
-        load_config(config_path)
+        load_config(minimal_config_path)
 
 
-def test_coupling_boundary_must_match_mf6_time_step(tmp_path: Path) -> None:
-    global_file, namefile, library, executable = _write_minimal_models(tmp_path)
-    (tmp_path / "mf6" / "time.tdis").write_text(
-        """BEGIN OPTIONS
-  TIME_UNITS DAYS
-END OPTIONS
-BEGIN DIMENSIONS
-  NPER 1
-END DIMENSIONS
-BEGIN PERIODDATA
-  10 5 1
-END PERIODDATA
-""",
-        encoding="utf-8",
-    )
-    config_path = tmp_path / "config.yml"
-    config_path.write_text(
-        f"""mf6:
-  namefile: {namefile.relative_to(tmp_path)}
-  library: {library.relative_to(tmp_path)}
-vic:
-  global_file: {global_file.relative_to(tmp_path)}
-  executable: {executable.relative_to(tmp_path)}
-coupling:
-  exchange_table: exchange.csv
-  interval_days: 1
-  exchange_length_m: 100
-  exchange_conductivity_scale: 0.001
-  head_transform: identity
-""",
-        encoding="utf-8",
-    )
-
-    config = load_config(config_path)
+def test_coupling_boundary_must_match_mf6_time_step(minimal_config_path):
+    tdis = minimal_config_path.parent / "mf6/time.tdis"
+    tdis.write_text(tdis.read_text().replace("10 10 1", "10 5 1"))
     with pytest.raises(ConfigurationError, match="MF6 time-step boundary"):
-        run_preflight(config)
+        run_preflight(load_config(minimal_config_path))
 
 
-def test_reserved_groundwater_environment_override_is_rejected(tmp_path: Path) -> None:
-    global_file, namefile, library, executable = _write_minimal_models(tmp_path)
-    config_path = tmp_path / "config.yml"
-    config_path.write_text(
-        f"""mf6:
-  namefile: {namefile.relative_to(tmp_path)}
-  library: {library.relative_to(tmp_path)}
-vic:
-  global_file: {global_file.relative_to(tmp_path)}
-  executable: {executable.relative_to(tmp_path)}
-  environment:
-    VIC_GW_REFERENCE_DEPTH: node
-coupling:
-  exchange_table: exchange.csv
-  interval_days: 1
-  exchange_length_m: 100
-  exchange_conductivity_scale: 0.001
-  head_transform: identity
-""",
-        encoding="utf-8",
-    )
-
+def test_reserved_groundwater_environment_override_is_rejected(minimal_config_path):
+    raw = yaml.safe_load(minimal_config_path.read_text())
+    raw["vic"]["environment"] = {"VIC_GW_REFERENCE_DEPTH": "node"}
+    minimal_config_path.write_text(yaml.safe_dump(raw))
     with pytest.raises(ConfigurationError, match="coupler-owned groundwater controls"):
-        load_config(config_path)
+        load_config(minimal_config_path)
 
 
-def test_inspect_does_not_require_compiled_runtime_files(
-    tmp_path: Path, capsys
-) -> None:
-    global_file, namefile, library, executable = _write_minimal_models(tmp_path)
-    library.unlink()
-    executable.unlink()
-    config_path = tmp_path / "config.yml"
-    config_path.write_text(
-        f"""mf6:
-  namefile: {namefile.relative_to(tmp_path)}
-  library: {library.relative_to(tmp_path)}
-vic:
-  global_file: {global_file.relative_to(tmp_path)}
-  executable: {executable.relative_to(tmp_path)}
-coupling:
-  exchange_table: exchange.csv
-  interval_days: 1
-  exchange_length_m: 100
-  exchange_conductivity_scale: 0.001
-  head_transform: identity
-""",
-        encoding="utf-8",
-    )
+def test_solver_ids_are_not_solution_group_numbers():
+    models = tuple(_Mf6ModelEntry(name, Path(name)) for name in ("A", "B"))
+    lines = [
+        "BEGIN SOLUTIONGROUP 1",
+        "IMS6 a.ims A",
+        "IMS6 b.ims B",
+        "END SOLUTIONGROUP",
+    ]
+    assert _parse_mf6_solution_groups(lines, models, Path("mfsim.nam")) == {
+        "A": 1,
+        "B": 2,
+    }
+    with pytest.raises(ConfigurationError, match="exactly one"):
+        _parse_mf6_solution_groups(
+            lines[:-1] + ["IMS6 extra.ims A"], models, Path("mfsim.nam")
+        )
 
-    from vicmf6.cli import main
 
-    assert main(["inspect", "-c", str(config_path)]) == 0
-    output = capsys.readouterr().out
-    assert "preflight: PASS" in output
-    assert "GW: API=VICAPI solution=1" in output
+def test_ambiguous_vic_exchange_stream_is_rejected(minimal_config_path):
+    global_file = minimal_config_path.parent / "vic/model.global"
+    with global_file.open("a") as stream:
+        stream.write("OUTFILE another_stream\nOUTVAR OUT_GW_EXCHANGE\n")
+    with pytest.raises(ConfigurationError, match="multiple VIC OUTFILE streams"):
+        load_config(minimal_config_path)

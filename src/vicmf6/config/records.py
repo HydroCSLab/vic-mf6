@@ -46,7 +46,7 @@ class Mf6Config:
             return self.solution_ids[key]
         except KeyError as exc:
             raise ConfigurationError(
-                f"no resolved solution group for MF6 model {key}"
+                f"no resolved solver ID for MF6 model {key}"
             ) from exc
 
 
@@ -66,6 +66,7 @@ class VicConfig:
     exchange_conductivity_scale: float
     head_transform: str
     exchange_variable: str = "OUT_GW_EXCHANGE"
+    runoff_variable: str | None = None
     exchange_output_prefix: str | None = None
     mpi_processes: int = 1
     omp_threads: int = 1
@@ -84,6 +85,7 @@ class CouplingConfig:
     end_time: datetime
     interval_days: float
     diagnostics_directory: Path
+    surface_runoff_table: Path | None = None
     scheme: str = "explicit"
     require_full_vic_coverage: bool = True
     coverage_relative_tolerance: float = 1.0e-10

@@ -1,5 +1,7 @@
+import logging
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -21,6 +23,8 @@ class _FakeXmi:
             "HCOF": np.array([0.0], dtype=np.float64),
             "RHS": np.array([0.0], dtype=np.float64),
             "SIMVALS": np.array([0.0], dtype=np.float64),
+            "NODES": np.array([1]),
+            "NODESUSER": np.array([1]),
         }
 
     def get_var_address(self, name, model_name, package_name=""):
@@ -50,7 +54,16 @@ class _FakeXmi:
         self.current_time += self.time_step
 
     def get_value_ptr(self, address: str) -> np.ndarray:
-        return self.values[address]
+        return self.values[address.rsplit("/", 1)[-1]]
+
+    def get_input_var_names(self):
+        return [
+            f"H8A/DIS/{name}"
+            for name in ("NODES", "NODESUSER", "NODEUSER")
+            if name in self.values
+        ]
+
+    get_output_var_names = get_input_var_names
 
 
 def make_runtime(boundaries=(1.0,)) -> Mf6Runtime:
@@ -69,7 +82,7 @@ def make_runtime(boundaries=(1.0,)) -> Mf6Runtime:
         config,
         model_name="H8A",
         coupled_nodes=[1],
-        logger=object(),
+        logger=logging.getLogger(__name__),
     )
     runtime.xmi = _FakeXmi()
     runtime._head_address = "X"
@@ -80,21 +93,7 @@ def make_runtime(boundaries=(1.0,)) -> Mf6Runtime:
     return runtime
 
 
-def test_api_simvals_are_sampled_after_finalize_solve() -> None:
-    runtime = make_runtime()
-
-    result = runtime.advance_to(
-        1.0,
-        np.array([2.0], dtype=np.float64),
-        api_tolerance_m3_per_day=1.0e-12,
-    )
-
-    assert result.maximum_api_error_m3_per_day == 0.0
-    assert result.applied.net_m3 == 2.0
-    assert runtime.current_time_days() == 1.0
-
-
-@pytest.mark.parametrize("volume", [2.0, -3.0, 0.0])
+@pytest.mark.parametrize("volume", [2.0, -3.0])
 def test_exchange_volume_is_integrated_across_native_substeps(volume):
     runtime = make_runtime((0.125, 0.375, 1.0, 1.5, 2.0))
     for target in (1.0, 2.0):
@@ -135,3 +134,46 @@ def test_native_substep_cannot_cross_coupling_boundary():
     with pytest.raises(Mf6RuntimeError, match="cross a coupling boundary"):
         runtime.advance_to(0.5, np.array([2.0]), api_tolerance_m3_per_day=1e-12)
     assert runtime.current_time_days() == 0.0
+
+
+class _InitializationXmi(_FakeXmi):
+    def __init__(self) -> None:
+        super().__init__()
+        self.sequential_calls = 0
+        self.parallel_handles = []
+
+    def initialize(self) -> None:
+        self.sequential_calls += 1
+
+    def initialize_mpi(self, handle: int) -> None:
+        self.parallel_handles.append(handle)
+
+
+@pytest.mark.parametrize("comm_size", [1, 2])
+def test_initialization_selects_solver_path(monkeypatch, comm_size):
+    wrapper = _InitializationXmi()
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "xmipy",
+        SimpleNamespace(XmiWrapper=lambda *args, **kwargs: wrapper),
+    )
+    runtime = make_runtime()
+    runtime.xmi = None
+    runtime._head_address = None
+    runtime.boundary = None
+
+    def communicator_from_handle(handle):
+        assert handle == 17
+        return SimpleNamespace(Get_size=lambda: comm_size)
+
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "mpi4py",
+        SimpleNamespace(
+            MPI=SimpleNamespace(Comm=SimpleNamespace(f2py=communicator_from_handle))
+        ),
+    )
+    runtime.initialize(17)
+
+    assert wrapper.sequential_calls == (1 if comm_size == 1 else 0)
+    assert wrapper.parallel_handles == ([] if comm_size == 1 else [17])

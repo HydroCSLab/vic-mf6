@@ -6,6 +6,8 @@ MF6 exposes both flow values and enough topology to identify reverse pairs.
 
 from __future__ import annotations
 
+from logging import Logger
+
 import numpy as np
 
 from .variables import find_model_variable_by_suffix, optional_variable_address
@@ -14,7 +16,7 @@ from .variables import find_model_variable_by_suffix, optional_variable_address
 class NativeLateralFlow:
     """Retain topology once and read current rates after a converged solve."""
 
-    def __init__(self, xmi: object, model_name: str, logger: object) -> None:
+    def __init__(self, xmi: object, model_name: str, logger: Logger) -> None:
         self.xmi = xmi
         self.ia = self.ja = None
         self.address = optional_variable_address(xmi, "FLOWJA", model_name)
@@ -24,9 +26,7 @@ class NativeLateralFlow:
         ia_address = find_model_variable_by_suffix(xmi, model_name, "IA")
         ja_address = find_model_variable_by_suffix(xmi, model_name, "JA")
         if ia_address is None or ja_address is None:
-            _log(
-                logger,
-                "warning",
+            logger.warning(
                 f"FLOWJA is available for {model_name}, but IA/JA topology was not exposed; lateral diagnostics are disabled",
             )
             self.address = None
@@ -44,9 +44,3 @@ class NativeLateralFlow:
         return np.asarray(
             self.xmi.get_value_ptr(self.address), dtype=np.float64
         ).reshape(-1)
-
-
-def _log(logger: object, level: str, message: str) -> None:
-    method = getattr(logger, level, None)
-    if callable(method):
-        method(message)

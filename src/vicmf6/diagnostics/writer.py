@@ -135,9 +135,6 @@ def _relative_net_error(expected_m3: float, actual_m3: float) -> float:
 
 
 def _package_version() -> str:
-    try:
-        from . import __version__
+    from .. import __version__
 
-        return __version__
-    except Exception:
-        return "unknown"
+    return __version__

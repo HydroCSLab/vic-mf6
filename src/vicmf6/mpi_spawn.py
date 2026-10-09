@@ -12,9 +12,9 @@ See docs/python-architecture.md for the parent/child lifecycle.
 
 from __future__ import annotations
 
-import os
 import shutil
 import signal
+from logging import Logger
 from pathlib import Path
 
 from .errors import VicRuntimeError
@@ -30,7 +30,7 @@ def spawn_vic(
     timeout_seconds: int,
     preload_library: Path | None,
     environment: dict[str, str],
-    logger: object,
+    logger: Logger,
 ) -> None:
     """spawn VIC and wait for the child communicator to disconnect cleanly."""
 
@@ -71,18 +71,6 @@ def spawn_vic(
     if preload_library is not None:
         child_environment["LD_PRELOAD"] = str(preload_library)
 
-    # rank zero also uses a conservative thread environment. this avoids a
-    # controller-side blas implementation consuming cores while child VIC and
-    # persistent groundwater workers are active on the same allocation.
-    for key in (
-        "OMP_NUM_THREADS",
-        "OMP_DYNAMIC",
-        "OPENBLAS_NUM_THREADS",
-        "MKL_NUM_THREADS",
-        "NUMEXPR_NUM_THREADS",
-    ):
-        os.environ[key] = child_environment[key]
-
     # do not encode the VIC environment in MPI_Info. MPI info values have a
     # small implementation-defined maximum length, while the coupling paths
     # alone can exceed it. launch through `env` instead: it sets the exact
@@ -99,9 +87,7 @@ def spawn_vic(
     info = MPI.Info.Create()
     try:
         info.Set("wdir", str(working_directory))
-        _log(
-            logger,
-            "info",
+        logger.info(
             f"vic spawn ranks={mpi_processes} omp_threads={omp_threads} global={str(global_parameter_file.resolve())}",
         )
         _spawn_with_timeout(
@@ -160,9 +146,3 @@ def _spawn_with_timeout(
     finally:
         signal.alarm(0)
         signal.signal(signal.SIGALRM, previous_handler)
-
-
-def _log(logger: object, level: str, message: str) -> None:
-    method = getattr(logger, level, None)
-    if callable(method):
-        method(message)

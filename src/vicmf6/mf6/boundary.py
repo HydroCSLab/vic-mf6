@@ -90,3 +90,35 @@ class ApiFluxBoundary:
                 f"API SIMVALS contains non-finite values for {self.model_name}"
             )
         return selected
+
+
+class SfrRunoffBoundary:
+    """Write reach runoff rates to an existing MF6 SFR package through XMI."""
+
+    def __init__(self, xmi: object, model_name: str, package_name: str) -> None:
+        self.xmi = xmi
+        self.address = resolve_variable_address(xmi, "RUNOFF", model_name, package_name)
+        self.applied_address = resolve_variable_address(
+            xmi, "SIMRUNOFF", model_name, package_name
+        )
+
+    def write_rates(self, rates_m3_per_day: np.ndarray) -> None:
+        source = np.asarray(rates_m3_per_day, dtype=np.float64).reshape(-1)
+        if not np.all(np.isfinite(source)) or np.any(source < 0.0):
+            raise Mf6RuntimeError("SFR runoff rates must be finite and nonnegative")
+        target = np.asarray(self.xmi.get_value_ptr(self.address)).reshape(-1)
+        if source.size > target.size:
+            raise Mf6RuntimeError(
+                f"surface-runoff table references {source.size} reaches, but SFR exposes {target.size}"
+            )
+        target[:] = 0.0
+        target[: source.size] = source
+
+    def read_applied_rates(self) -> np.ndarray:
+        """Read solved runoff; inactive reaches can reject the prescribed rate."""
+        values = np.asarray(
+            self.xmi.get_value_ptr(self.applied_address), dtype=np.float64
+        ).reshape(-1)
+        if not np.all(np.isfinite(values)):
+            raise Mf6RuntimeError("SFR SIMRUNOFF contains non-finite values")
+        return values.copy()

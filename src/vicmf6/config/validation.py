@@ -27,9 +27,12 @@ def _validate_cross_section_contract(config: ApplicationConfig) -> None:
     if config.vic.head_transform not in {
         "identity",
         "pressure_head_from_interface_elevation",
+        "pressure_head_from_mf6_interface_elevation",
     }:
         raise ConfigurationError(
-            "coupling.head_transform must be 'identity' or 'pressure_head_from_interface_elevation'"
+            "coupling.head_transform must be 'identity', "
+            "'pressure_head_from_interface_elevation', or "
+            "'pressure_head_from_mf6_interface_elevation'"
         )
     if config.diagnostics.verbosity not in {"debug", "info", "warning", "error"}:
         raise ConfigurationError(
@@ -72,6 +75,10 @@ def _validate_paths(config: ApplicationConfig) -> None:
         "vic.domain": config.vic.domain_file,
         "coupling.exchange_table": config.coupling.exchange_table,
     }
+    if config.coupling.surface_runoff_table is not None:
+        required_files["coupling.surface_runoff_table"] = (
+            config.coupling.surface_runoff_table
+        )
     for field_name, path in required_files.items():
         if not path.is_file():
             raise ConfigurationError(f"{field_name} was not found: {path}")
@@ -136,7 +143,9 @@ def _text(raw: Any, field_name: str) -> str:
 def _positive_int(raw: Any, field_name: str) -> int:
     try:
         value = int(raw)
-    except (TypeError, ValueError) as exc:
+        if isinstance(raw, bool) or (not isinstance(raw, str) and raw != value):
+            raise ValueError("expected an integer")
+    except (TypeError, ValueError, OverflowError) as exc:
         raise ConfigurationError(f"{field_name} must be an integer") from exc
     if value < 1:
         raise ConfigurationError(f"{field_name} must be at least 1")

@@ -26,6 +26,7 @@ def advance_model_to_window_boundary(
     volume_by_node_m3: np.ndarray,
     *,
     api_tolerance_m3_per_day: float,
+    sfr_runoff_rates_m3_per_day: np.ndarray | None = None,
     time_tolerance_days: float = 1.0e-10,
 ) -> Mf6AdvanceResult:
     """hold one interface rate field fixed while MF6 advances to the window boundary."""
@@ -54,6 +55,7 @@ def advance_model_to_window_boundary(
     requested = SignedVolume.from_values(volume[runtime.coupled_nodes - 1])
 
     applied_boundary_volume = np.zeros(runtime.coupled_nodes.size, dtype=np.float64)
+    applied_runoff_volume = None
     flowja_volume: np.ndarray | None = None
     maximum_api_error = 0.0
     total_iterations = 0
@@ -75,16 +77,21 @@ def advance_model_to_window_boundary(
                 f"model={runtime.model_name} current={current:.17g} dt={dt:.17g} target={target:.17g}"
             )
 
-        applied_rate, api_error, iterations = solve_groundwater_time_step(
+        applied_rate, api_error, iterations, runoff_rate = solve_groundwater_time_step(
             runtime,
             dt,
             boundary_rates,
             api_tolerance_m3_per_day=api_tolerance_m3_per_day,
             time_tolerance_days=time_tolerance_days,
+            sfr_runoff_rates_m3_per_day=sfr_runoff_rates_m3_per_day,
         )
         maximum_api_error = max(maximum_api_error, api_error)
         total_iterations += iterations
         applied_boundary_volume += applied_rate * dt
+        if runoff_rate is not None:
+            if applied_runoff_volume is None:
+                applied_runoff_volume = np.zeros_like(runoff_rate)
+            applied_runoff_volume += runoff_rate * dt
 
         flowja_rate = (
             runtime.lateral_flow.current_rates() if runtime.lateral_flow else None
@@ -128,6 +135,11 @@ def advance_model_to_window_boundary(
         maximum_api_error_m3_per_day=maximum_api_error,
         nonlinear_iterations=total_iterations,
         lateral=lateral,
+        applied_runoff=(
+            None
+            if applied_runoff_volume is None
+            else SignedVolume.from_values(applied_runoff_volume)
+        ),
     )
 
 
@@ -138,7 +150,8 @@ def solve_groundwater_time_step(
     *,
     api_tolerance_m3_per_day: float,
     time_tolerance_days: float,
-) -> tuple[np.ndarray, float, int]:
+    sfr_runoff_rates_m3_per_day: np.ndarray | None = None,
+) -> tuple[np.ndarray, float, int, np.ndarray | None]:
     """Prepare, solve, and sample one substep, leaving time finalization to the caller.
 
     API SIMVALS and FLOWJA are valid only after finalize_solve. Both must be
@@ -159,6 +172,12 @@ def solve_groundwater_time_step(
         )
 
     boundary.write_rates(boundary_rates)
+    if sfr_runoff_rates_m3_per_day is not None:
+        if runtime.sfr_runoff is None:
+            raise Mf6RuntimeError(
+                "SFR runoff rates were provided without an initialized SFR boundary"
+            )
+        runtime.sfr_runoff.write_rates(sfr_runoff_rates_m3_per_day)
     xmi.prepare_solve(runtime.solution_id)
 
     converged = False
@@ -184,4 +203,18 @@ def solve_groundwater_time_step(
         raise Mf6RuntimeError(
             f"API6 rate mismatch for {runtime.model_name}: max_error={api_error:.6e} m3/day tolerance={api_tolerance_m3_per_day:.6e}"
         )
-    return applied_rate, api_error, iterations
+    runoff_rate = None
+    if sfr_runoff_rates_m3_per_day is not None:
+        runoff_rate = runtime.sfr_runoff.read_applied_rates()
+        requested_runoff = np.zeros_like(runoff_rate)
+        requested_runoff[: sfr_runoff_rates_m3_per_day.size] = (
+            sfr_runoff_rates_m3_per_day
+        )
+        runoff_error = float(
+            np.max(np.abs(runoff_rate - requested_runoff), initial=0.0)
+        )
+        if runoff_error > api_tolerance_m3_per_day:
+            raise Mf6RuntimeError(
+                f"SFR runoff rate mismatch for {runtime.model_name}: max_error={runoff_error:.6e} m3/day"
+            )
+    return applied_rate, api_error, iterations, runoff_rate

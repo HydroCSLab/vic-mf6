@@ -25,6 +25,8 @@ class SurfaceExchange:
     depth_mm: np.ndarray
     source_volume: SignedVolume
     maximum_water_error_mm: float | None = None
+    runoff_depth_mm: np.ndarray | None = None
+    runoff_source_volume: SignedVolume | None = None
 
 
 @dataclass(frozen=True)

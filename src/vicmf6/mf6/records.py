@@ -32,3 +32,4 @@ class Mf6AdvanceResult:
     maximum_api_error_m3_per_day: float
     nonlinear_iterations: int
     lateral: LateralFlowDiagnostics | None
+    applied_runoff: SignedVolume | None = None

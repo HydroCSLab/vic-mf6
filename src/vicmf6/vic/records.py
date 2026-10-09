@@ -30,6 +30,7 @@ class VicWindowResult:
     """signed exchange amount and accepted restart produced by one window."""
 
     exchange_grid_mm: np.ndarray
+    runoff_grid_mm: np.ndarray | None
     state_file: Path
     maximum_water_error_mm: float | None
     spawn_seconds: float

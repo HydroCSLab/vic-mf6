@@ -4,6 +4,7 @@ Keeping this presentation code out of the algorithm makes additions to reports
 independent of model advancement and collective communication.
 """
 
+from logging import Logger
 from typing import Any
 
 from ..diagnostics import make_window_diagnostics
@@ -38,9 +39,7 @@ def write_window_diagnostics(
         lateral_gross = statistics.lateral_gross
         lateral_error = statistics.lateral_pair_error
     elif statistics.lateral_count:
-        log_message(
-            session.logger,
-            "warning",
+        session.logger.warning(
             "FLOWJA topology was available on only part of the MF6 worker set; whole-domain lateral diagnostics are omitted",
         )
     row = make_window_diagnostics(
@@ -70,58 +69,36 @@ def write_window_diagnostics(
     report_window(session.logger, row, total_windows=total_windows)
 
 
-def report_window(logger: object, row: Any, *, total_windows: int) -> None:
-    log_message(logger, "info", "")
-    log_message(logger, "info", f"coupling step {row.step} / {total_windows}")
-    log_message(logger, "info", f"vic interval      : {row.start} -> {row.end}")
-    log_message(
-        logger,
-        "info",
+def report_window(logger: Logger, row: Any, *, total_windows: int) -> None:
+    logger.info("")
+    logger.info(f"coupling step {row.step} / {total_windows}")
+    logger.info(f"vic interval      : {row.start} -> {row.end}")
+    logger.info(
         f"groundwater head  : min {row.head_min_m:.6f}  max {row.head_max_m:.6f}  mean {row.head_mean_m:.6f} m",
     )
-    log_message(
-        logger,
-        "info",
+    logger.info(
         "vic exchange      : "
         f"positive {row.vic_positive_m3:.6e}  negative {row.vic_negative_m3:.6e}  net {row.vic_net_m3:.6e} m3",
     )
-    log_message(
-        logger,
-        "info",
+    logger.info(
         "mapped overlaps   : "
         f"positive {row.mapped_positive_m3:.6e}  negative {row.mapped_negative_m3:.6e}  net {row.mapped_net_m3:.6e} m3",
     )
-    log_message(
-        logger,
-        "info",
+    logger.info(
         "mf6 boundary      : "
         f"positive {row.boundary_positive_m3:.6e}  negative {row.boundary_negative_m3:.6e}  net {row.boundary_net_m3:.6e} m3",
     )
-    log_message(
-        logger,
-        "info",
+    logger.info(
         f"mf6 solve          : converged, max nonlinear calls {row.nonlinear_iterations_max}",
     )
-    log_message(
-        logger,
-        "info",
+    logger.info(
         f"mapping error      : {row.net_mapping_error_m3:.6e} m3 net",
     )
-    log_message(
-        logger,
-        "info",
+    logger.info(
         f"api error          : {row.net_api_error_m3:.6e} m3 net",
     )
     if row.maximum_vic_water_error_mm is not None:
-        log_message(
-            logger,
-            "info",
+        logger.info(
             f"vic water error    : {row.maximum_vic_water_error_mm:.6e} mm max abs",
         )
-    log_message(logger, "info", f"elapsed            : {row.window_seconds:.3f} s")
-
-
-def log_message(logger: object, level: str, message: str) -> None:
-    method = getattr(logger, level, None)
-    if callable(method):
-        method(message)
+    logger.info(f"elapsed            : {row.window_seconds:.3f} s")

@@ -65,11 +65,26 @@ def validate_exchange_records(
     rows = [dict(record) for record in records]
     if not rows:
         raise ExchangeTableError("exchange table contains no overlap rows")
-    if coverage_relative_tolerance < 0.0:
+    if (
+        not np.isfinite(coverage_relative_tolerance)
+        or coverage_relative_tolerance < 0.0
+    ):
         raise ExchangeTableError("coverage_relative_tolerance must be nonnegative")
 
     parsed = [_parse_row(row, index) for index, row in enumerate(rows)]
     _reject_duplicate_relations(parsed)
+    coordinates_by_id = {}
+    ids_by_coordinates = {}
+    for row in parsed:
+        cell_id = str(row["vic_id"])
+        coordinates = (int(row["vic_row"]), int(row["vic_col"]))
+        if (
+            coordinates_by_id.setdefault(cell_id, coordinates) != coordinates
+            or ids_by_coordinates.setdefault(coordinates, cell_id) != cell_id
+        ):
+            raise ExchangeTableError(
+                "each VIC cell must have one unique vic_id and row/column pair"
+            )
 
     vic_key_order: list[tuple[str, int, int]] = []
     vic_metadata: dict[tuple[str, int, int], dict[str, float | str | int | None]] = {}
@@ -77,6 +92,7 @@ def validate_exchange_records(
     models: list[str] = []
     nodes: list[int] = []
     areas: list[float] = []
+    mf6_interface_elevations: list[float] = []
 
     for row in parsed:
         key = (str(row["vic_id"]), int(row["vic_row"]), int(row["vic_col"]))
@@ -90,6 +106,10 @@ def validate_exchange_records(
         models.append(str(row["mf6_model"]))
         nodes.append(int(row["mf6_node"]) - 1)
         areas.append(float(row["overlap_area_m2"]))
+        elevation = row.get("mf6_interface_elevation_m")
+        mf6_interface_elevations.append(
+            np.nan if elevation is None else float(elevation)
+        )
 
     vic_position_by_key = {key: index for index, key in enumerate(vic_key_order)}
     overlap_positions = np.asarray(
@@ -151,4 +171,7 @@ def validate_exchange_records(
         overlap_model=np.asarray(models, dtype=object),
         overlap_mf6_node_zero=np.asarray(nodes, dtype=np.int64),
         overlap_area_m2=overlap_area,
+        overlap_mf6_interface_elevation_m=np.asarray(
+            mf6_interface_elevations, dtype=np.float64
+        ),
     )

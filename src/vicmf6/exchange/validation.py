@@ -27,6 +27,7 @@ _OPTIONAL_FLOAT_COLUMNS = {
     "vic_lat",
     "vic_lon",
     "vic_interface_elevation_m",
+    "mf6_interface_elevation_m",
 }
 
 
@@ -41,7 +42,7 @@ def _parse_row(raw: Mapping[str, object], index: int) -> dict[str, object]:
         "vic_id": str(raw["vic_id"]).strip(),
         "vic_row": _integer(raw["vic_row"], "vic_row", index, minimum=0),
         "vic_col": _integer(raw["vic_col"], "vic_col", index, minimum=0),
-        "mf6_model": str(raw["mf6_model"]).strip(),
+        "mf6_model": str(raw["mf6_model"]).strip().upper(),
         "mf6_node": _integer(raw["mf6_node"], "mf6_node", index, minimum=1),
         "overlap_area_m2": _finite_float(
             raw["overlap_area_m2"], "overlap_area_m2", index, positive=True

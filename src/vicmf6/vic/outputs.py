@@ -10,16 +10,16 @@ from pathlib import Path
 import numpy as np
 
 from ..errors import VicRuntimeError
-from ..netcdf import read_netcdf_array as _netcdf_array
-from ..netcdf import sum_vic_time_records
+from ..netcdf import read_netcdf_array, sum_vic_time_records
 
 
-def _read_window_outputs(
+def read_vic_window_outputs(
     output_directory: Path,
     *,
     prefix: str,
     exchange_variable: str,
-) -> tuple[np.ndarray, float | None]:
+    runoff_variable: str | None = None,
+) -> tuple[np.ndarray, float | None, np.ndarray | None]:
     try:
         from netCDF4 import Dataset
     except ImportError as exc:
@@ -35,11 +35,12 @@ def _read_window_outputs(
 
     exchange_total: np.ndarray | None = None
     maximum_water_error: float | None = None
+    runoff_total: np.ndarray | None = None
     for path in paths:
         with Dataset(str(path), "r") as dataset:
             if exchange_variable not in dataset.variables:
                 raise VicRuntimeError(f"{exchange_variable} was not found in {path}")
-            exchange = _netcdf_array(dataset.variables[exchange_variable])
+            exchange = read_netcdf_array(dataset.variables[exchange_variable])
             exchange_2d = _sum_time_axis(exchange, exchange_variable, path)
             exchange_total = (
                 exchange_2d.copy()
@@ -47,8 +48,19 @@ def _read_window_outputs(
                 else exchange_total + exchange_2d
             )
 
+            if runoff_variable is not None:
+                if runoff_variable not in dataset.variables:
+                    raise VicRuntimeError(f"{runoff_variable} was not found in {path}")
+                runoff = read_netcdf_array(dataset.variables[runoff_variable])
+                runoff_2d = _sum_time_axis(runoff, runoff_variable, path)
+                runoff_total = (
+                    runoff_2d.copy()
+                    if runoff_total is None
+                    else runoff_total + runoff_2d
+                )
+
             if "OUT_WATER_ERROR" in dataset.variables:
-                water_error = _netcdf_array(dataset.variables["OUT_WATER_ERROR"])
+                water_error = read_netcdf_array(dataset.variables["OUT_WATER_ERROR"])
                 finite = np.abs(water_error[np.isfinite(water_error)])
                 if finite.size:
                     value = float(finite.max())
@@ -62,7 +74,9 @@ def _read_window_outputs(
         raise VicRuntimeError(
             "failed to construct a two-dimensional VIC exchange field"
         )
-    return exchange_total, maximum_water_error
+    if runoff_variable is not None and (runoff_total is None or runoff_total.ndim != 2):
+        raise VicRuntimeError("failed to construct a two-dimensional VIC runoff field")
+    return exchange_total, maximum_water_error, runoff_total
 
 
 def _sum_time_axis(array: np.ndarray, variable_name: str, path: Path) -> np.ndarray:

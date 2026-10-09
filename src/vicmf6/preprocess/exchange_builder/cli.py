@@ -22,10 +22,21 @@ def _parser() -> argparse.ArgumentParser:
         "--mf6-crs",
         help="override/define the MF6 horizontal CRS (for example EPSG:5070)",
     )
-    parser.add_argument(
+    interface = parser.add_mutually_exclusive_group()
+    interface.add_argument(
         "--interface-elevation-m",
         type=float,
         help="constant VIC soil-base elevation in the shared vertical datum",
+    )
+    interface.add_argument(
+        "--interface-from-parameters",
+        action="store_true",
+        help="use PARAMETERS elev minus the sum of soil-layer depth in each VIC cell",
+    )
+    parser.add_argument(
+        "--mf6-interface-bound",
+        choices=("top", "bottom"),
+        help="store the selected coupled MF6 cell bound as its reference interface",
     )
     parser.add_argument(
         "--allow-partial-vic-coverage",
@@ -53,6 +64,8 @@ def main(argv: list[str] | None = None) -> int:
             output=args.output,
             mf6_crs=args.mf6_crs,
             interface_elevation_m=args.interface_elevation_m,
+            interface_from_parameters=args.interface_from_parameters,
+            mf6_interface_bound=args.mf6_interface_bound,
             require_full_vic_coverage=not args.allow_partial_vic_coverage,
             coverage_tolerance=args.coverage_tolerance,
             force=args.force,

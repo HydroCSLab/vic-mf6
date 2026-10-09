@@ -63,19 +63,3 @@ class TdisSchedule:
             "MF6 current time does not coincide with a parsed TDIS boundary: "
             f"current={current:.17g}"
         )
-
-
-def _next_tdis_time_step_days(
-    boundaries_days: Sequence[float],
-    current_time_days: float,
-    *,
-    tolerance_days: float,
-) -> float:
-    """Compatibility helper; persistent runtimes construct TdisSchedule only once."""
-    return TdisSchedule(boundaries_days).next_step_days(
-        current_time_days, tolerance_days=tolerance_days
-    )
-
-
-def _strip_comment(raw_line: str) -> str:
-    return raw_line.split("#", 1)[0].strip()

@@ -98,6 +98,9 @@ def load_config(path: str | Path, *, check_paths: bool = True) -> ApplicationCon
             "coupling.interval_days",
         ),
         diagnostics_directory=run_directory / "diagnostics",
+        surface_runoff_table=_optional_path(
+            config_dir, coupling_raw.get("surface_runoff_table")
+        ),
         scheme=_text(coupling_raw.get("scheme", "explicit"), "coupling.scheme").lower(),
         require_full_vic_coverage=_bool(
             coupling_raw.get("require_full_vic_coverage", True),
@@ -131,6 +134,11 @@ def load_config(path: str | Path, *, check_paths: bool = True) -> ApplicationCon
         domain_file=vic_source.domain_file,
         forcing_prefixes=vic_source.forcing_prefixes,
         exchange_variable="OUT_GW_EXCHANGE",
+        runoff_variable=(
+            "OUT_RUNOFF"
+            if coupling.surface_runoff_table is not None
+            else None
+        ),
         exchange_output_prefix=vic_source.exchange_output_prefix,
         mpi_processes=_positive_int(
             vic_raw.get("mpi_processes", 1), "vic.mpi_processes"

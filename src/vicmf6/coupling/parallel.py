@@ -40,6 +40,10 @@ class CouplingCommunicator:
         self.world.Bcast(depth_mm, root=0)
         self.elapsed_seconds += time.perf_counter() - start
 
+    def broadcast_vic_runoff(self, runoff_mm: np.ndarray) -> None:
+        """Broadcast runoff separately so existing exchange collectives stay stable."""
+        self.broadcast_vic_depth(runoff_mm)
+
     def wait_for_conservation_check(self) -> None:
         """Do not start the next native solve until the controller accepts mapping."""
         start = time.perf_counter()
@@ -64,6 +68,8 @@ class CouplingCommunicator:
         # Use the head snapshot returned by the completed solve. Reading native
         # heads again would copy the same node-sized array a second time.
         head = advance.head_m if advance is not None else np.empty(0)
+        # Inactive user-grid cells are NaN; the adapter already checked active heads.
+        head = head[np.isfinite(head)]
         lateral = advance.lateral if advance is not None else None
         totals = self.reduce_array(
             np.asarray(

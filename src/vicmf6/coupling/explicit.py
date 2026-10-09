@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from logging import Logger
 
 from ..config import ApplicationConfig
 from ..errors import CouplingRuntimeError
@@ -18,7 +19,7 @@ from .stages import (
 )
 
 
-def run_coupling(config: ApplicationConfig, *, logger: object) -> int:
+def run_coupling(config: ApplicationConfig, *, logger: Logger) -> int:
     """Advance both models once per window using heads from the previous window.
 
     Run on every outer MPI rank. A rank-local exception propagates to the CLI,
@@ -51,7 +52,7 @@ def run_coupling(config: ApplicationConfig, *, logger: object) -> int:
         boundary = map_exchange_and_check_conservation(session, surface, timings)
         # 4. Advance persistent MF6 models under that fixed exchange rate.
         advance, applied = advance_groundwater_and_check_application(
-            session, window, boundary, timings
+            session, window, boundary, surface, timings
         )
         # 5. Record accepted results; these heads will drive the next VIC window.
         statistics = session.parallel.reduce_groundwater_statistics(advance, timings)

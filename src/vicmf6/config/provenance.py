@@ -49,6 +49,7 @@ def config_as_dict(config: ApplicationConfig) -> dict[str, Any]:
             "outputs_directory": str(config.vic.outputs_directory),
             "exchange_directory": str(config.vic.exchange_directory),
             "exchange_variable": config.vic.exchange_variable,
+            "runoff_variable": config.vic.runoff_variable,
             "exchange_output_prefix": config.vic.exchange_output_prefix,
             "mpi_processes": config.vic.mpi_processes,
             "omp_threads": config.vic.omp_threads,
@@ -63,6 +64,11 @@ def config_as_dict(config: ApplicationConfig) -> dict[str, Any]:
         },
         "coupling": {
             "exchange_table": str(config.coupling.exchange_table),
+            "surface_runoff_table": (
+                str(config.coupling.surface_runoff_table)
+                if config.coupling.surface_runoff_table is not None
+                else None
+            ),
             "start_time": config.coupling.start_time.isoformat(),
             "end_time": config.coupling.end_time.isoformat(),
             "interval_days": config.coupling.interval_days,

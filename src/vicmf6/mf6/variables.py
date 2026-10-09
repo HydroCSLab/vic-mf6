@@ -53,8 +53,9 @@ def find_model_variable_by_suffix(
             continue
     candidates = [
         name
-        for name in names
-        if name.upper().endswith("/" + target) and model_name in name.upper().split("/")
+        for name in dict.fromkeys(names)
+        if name.upper().endswith("/" + target)
+        and model_name.upper() in name.upper().split("/")
     ]
     if len(candidates) == 1:
         return candidates[0]

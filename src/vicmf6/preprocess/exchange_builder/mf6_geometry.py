@@ -87,12 +87,46 @@ def _selected_surface_nodes(gwf: Any, grid_type: str) -> list[int]:
 
     # DISU has no general layer index.  Geometry is used below to collapse
     # duplicate horizontal footprints to the node with the highest cell top.
+    # Select those nodes from CELL2D vertex identities before polygons are
+    # constructed.  National layered DISU grids can otherwise spend most of
+    # preprocessing building the same footprint once per vertical layer.
     disu = gwf.disu
     idomain = _array_or_none(disu, "idomain")
     nodes = int(disu.nodes.array)
-    if idomain is None:
-        return list(range(nodes))
-    return [int(index) for index in np.flatnonzero(idomain.reshape(-1) > 0)]
+    active = (
+        np.ones(nodes, dtype=bool)
+        if idomain is None
+        else np.asarray(idomain).reshape(-1) > 0
+    )
+    cell2d_value = getattr(disu, "cell2d", None)
+    cell2d = None if cell2d_value is None else getattr(cell2d_value, "array", None)
+    top = _array_or_none(disu, "top")
+    if cell2d is None or top is None or len(cell2d) != nodes:
+        return [int(index) for index in np.flatnonzero(active)]
+
+    vertex_fields = [
+        name for name in cell2d.dtype.names or () if name.startswith("icvert_")
+    ]
+    if not vertex_fields or "ncvert" not in (cell2d.dtype.names or ()):
+        return [int(index) for index in np.flatnonzero(active)]
+    top = np.asarray(top, dtype=np.float64).reshape(-1)
+    selected: dict[tuple[int, ...], int] = {}
+    for node_zero in np.flatnonzero(active):
+        record = cell2d[int(node_zero)]
+        count = int(record["ncvert"])
+        vertices = tuple(int(record[name]) for name in vertex_fields[:count])
+        # Treat a cyclic rotation or opposite orientation as the same polygon.
+        rotations = [vertices[index:] + vertices[:index] for index in range(count)]
+        reversed_vertices = tuple(reversed(vertices))
+        rotations.extend(
+            reversed_vertices[index:] + reversed_vertices[:index]
+            for index in range(count)
+        )
+        key = min(rotations)
+        previous = selected.get(key)
+        if previous is None or top[int(node_zero)] > top[previous]:
+            selected[key] = int(node_zero)
+    return sorted(selected.values())
 
 
 def _node_vertical_bounds(
@@ -239,9 +273,7 @@ def load_mf6_cells(
             for cell in candidate:
                 key = cell.polygon.normalize().wkb
                 previous = grouped.get(key)
-                if previous is None or (cell.top_m or -np.inf) > (
-                    previous.top_m or -np.inf
-                ):
+                if previous is None or cell.top_m > previous.top_m:
                     grouped[key] = cell
             candidate = sorted(grouped.values(), key=lambda item: item.node)
 

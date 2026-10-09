@@ -6,6 +6,7 @@ physics is verified separately by the complete Stehekin acceptance workflow.
 """
 
 import csv
+import logging
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -27,13 +28,17 @@ node_volumes = np.array([0.014, -0.024, 0.040, 0.025])
 
 
 class GroundwaterModel:
-    def __init__(self, config, *, model_name, coupled_nodes, logger):
+    def __init__(
+        self, config, *, model_name, coupled_nodes, logger, sfr_runoff_package
+    ):
+        assert sfr_runoff_package is None
         self.model_name = model_name
         self.head = initial_heads[2 * (rank - 1) : 2 * rank].copy()
         self.node_count = 2
 
-    def initialize(self, comm_handle):
+    def initialize(self, comm_handle, *, mpi_comm_size):
         assert MPI.Comm.f2py(comm_handle).Get_size() == 2
+        assert mpi_comm_size == 2
 
     def current_head(self):
         return self.head.copy()
@@ -165,6 +170,7 @@ def main():
         vic=SimpleNamespace(),
         coupling=SimpleNamespace(
             exchange_table=table_path,
+            surface_runoff_table=None,
             require_full_vic_coverage=True,
             coverage_relative_tolerance=1e-12,
             diagnostics_directory=output_path,
@@ -179,7 +185,7 @@ def main():
     session.Mf6Runtime = GroundwaterModel
     session.VicRuntime = SurfaceModel
     session.DiagnosticsWriter = Diagnostics
-    run_coupling(config, logger=object())
+    run_coupling(config, logger=logging.getLogger(__name__))
     world.Barrier()
     if rank == 0:
         assert all((output_path / f"finalized-{worker}").is_file() for worker in (1, 2))

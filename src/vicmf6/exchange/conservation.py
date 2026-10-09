@@ -6,9 +6,17 @@ Use net equality when opposite overlap signs combine on the same MF6 node."""
 from __future__ import annotations
 
 from collections.abc import Iterable
+from math import isfinite
 
 from ..errors import ConservationError
 from .records import SignedVolume
+
+
+def volume_tolerance_m3(
+    actual: float, expected: float, absolute: float, relative: float
+) -> float:
+    """Use the same absolute-plus-relative volume tolerance at runtime and in reports."""
+    return absolute + relative * max(abs(actual), abs(expected))
 
 
 def assert_signed_volume_close(
@@ -29,10 +37,13 @@ def assert_signed_volume_close(
     failures: list[str] = []
     for name, expected_value, actual_value in checks:
         error = abs(actual_value - expected_value)
-        allowed = absolute_tolerance_m3 + relative_tolerance * max(
-            abs(expected_value), abs(actual_value)
+        allowed = volume_tolerance_m3(
+            actual_value, expected_value, absolute_tolerance_m3, relative_tolerance
         )
-        if error > allowed:
+        if (
+            not all(map(isfinite, (actual_value, expected_value, allowed)))
+            or error > allowed
+        ):
             failures.append(
                 f"{name}: expected={expected_value:.17g} actual={actual_value:.17g} error={error:.6e} allowed={allowed:.6e}"
             )
@@ -53,10 +64,13 @@ def assert_net_volume_close(
     """compare only net volume when aggregation can cancel opposite signs."""
 
     error = abs(actual.net_m3 - expected.net_m3)
-    allowed = absolute_tolerance_m3 + relative_tolerance * max(
-        abs(expected.net_m3), abs(actual.net_m3)
+    allowed = volume_tolerance_m3(
+        actual.net_m3, expected.net_m3, absolute_tolerance_m3, relative_tolerance
     )
-    if error > allowed:
+    if (
+        not all(map(isfinite, (actual.net_m3, expected.net_m3, allowed)))
+        or error > allowed
+    ):
         raise ConservationError(
             f"{label} failed net conservation: "
             f"expected={expected.net_m3:.17g} actual={actual.net_m3:.17g} "
