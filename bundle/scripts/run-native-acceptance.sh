@@ -119,8 +119,9 @@ run_step() {
 
     if "$@"; then
         return 0
+    else
+        status=$?
     fi
-    status=$?
     collect_artifacts "$status"
     printf '[FAIL] native Stehekin acceptance; diagnostics: %s\n' "$output_dir" >&2
     exit "$status"

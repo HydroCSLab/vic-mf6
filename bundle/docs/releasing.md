@@ -24,24 +24,23 @@ this order:
 ## GitHub Container Registry
 
 The bundle image is intended for GitHub Container Registry as
-`ghcr.io/mabdazzam/vic-mf6`.
+`ghcr.io/hydrocslab/vic-mf6`.
 Build and test a versioned image before authenticating or publishing it:
 
 ```bash
 export VICMF6_VERSION=0.1.0
-./bundle/scripts/build-image.sh ghcr.io/mabdazzam/vic-mf6:$VICMF6_VERSION
-VICMF6_IMAGE=ghcr.io/mabdazzam/vic-mf6:$VICMF6_VERSION \
-    ./bundle/scripts/run-verification-evidence.sh
-VICMF6_IMAGE=ghcr.io/mabdazzam/vic-mf6:$VICMF6_VERSION \
+./bundle/scripts/build-image.sh ghcr.io/hydrocslab/vic-mf6:$VICMF6_VERSION
+VICMF6_IMAGE=ghcr.io/hydrocslab/vic-mf6:$VICMF6_VERSION \
     ./bundle/scripts/run-acceptance.sh bundle/results/release-stehekin
 ```
 
 After reviewing the exact commit, tests, and image tag, authenticate with a
-GitHub personal access token that has the `write:packages` scope and publish:
+GitHub personal access token that has the `write:packages` scope and permission
+to publish to HydroCSLab. Set `GITHUB_USER` to your GitHub username:
 
 ```bash
-printf '%s' "$CR_PAT" | docker login ghcr.io --username mabdazzam --password-stdin
-docker push ghcr.io/mabdazzam/vic-mf6:$VICMF6_VERSION
+printf '%s' "$CR_PAT" | docker login ghcr.io --username "$GITHUB_USER" --password-stdin
+docker push ghcr.io/hydrocslab/vic-mf6:$VICMF6_VERSION
 ```
 
 Set the package visibility deliberately in GitHub after the first push.

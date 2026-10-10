@@ -122,3 +122,30 @@ lateral flow, including FLOW-JA-FACE antisymmetry and cancellation.
 A passing software fixture verifies these coupling contracts for that fixture.
 Hydraulic parameters, forcing, boundary conditions, and calibration require
 their own scientific evaluation for each application.
+
+## Application checks beyond conservation
+
+Use coupling intervals `dt`, `dt/2`, and `dt/4` aligned with both native model
+calendars. Compare head trajectories, upward and downward exchange separately,
+soil moisture, ET, and streamflow where available. Exact transferred-volume
+closure does not bound the time-lag error of an explicit scheme, particularly
+in low-storage aquifers or during rapid wetting and drying.
+
+The current VIC exchange law represents an effective hydraulic resistance
+between the soil base and groundwater. The gap is not an explicitly resolved
+vadose column with its own water storage. Application tests should cover deep
+water tables, groundwater approaching the soil column, and upward extraction
+from a nearly dry aquifer. Groundwater donor availability and storage ownership
+need a defined physical treatment before adding an automatic flux limiter;
+clipping only the MF6 side would break the water transfer already applied by VIC.
+
+Check process ownership when retaining native groundwater stresses: VIC-driven
+recharge or ET should not also be imposed on the same area by RCH, UZF, or EVT
+unless those terms deliberately represent different water sources or sinks.
+The coupled VIC path already suppresses its conceptual ARNO baseflow.
+
+A complete catchment ledger would include precipitation, ET, soil/snow/canopy
+storage, groundwater storage, channel storage, outlet discharge, and external
+stresses. Groundwater exchange and optional VIC-to-SFR runoff are internal
+transfers in that ledger. The present groundwater CBC closure and interface
+checks verify only their stated portions of this larger balance.
