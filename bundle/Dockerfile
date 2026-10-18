@@ -91,9 +91,6 @@ FROM ubuntu:${UBUNTU_VERSION} AS runtime
 ARG DEBIAN_FRONTEND=noninteractive
 ARG USER_ID=1000
 ARG GROUP_ID=1000
-ARG SOURCE_REPOSITORY=https://github.com/HydroCSLab/vic-mf6
-ARG VERSION=local
-ARG REVISION=unknown
 
 RUN printf 'Acquire::ForceIPv4 "true";\n' > /etc/apt/apt.conf.d/99force-ipv4 \
     && apt-get update \
@@ -122,6 +119,9 @@ COPY native /opt/vicmf6/src/vic-mf6/native
 COPY scripts /opt/vicmf6/src/vic-mf6/scripts
 COPY examples /opt/vicmf6/src/vic-mf6/examples
 COPY vicmf6 /opt/vicmf6/src/vic-mf6/vicmf6
+COPY bundle/scripts /opt/vicmf6/src/vic-mf6/bundle/scripts
+COPY bundle/examples /opt/vicmf6/src/vic-mf6/bundle/examples
+COPY bundle/components.lock /opt/vicmf6/src/vic-mf6/bundle/components.lock
 COPY bundle/components.lock /opt/vicmf6/share/component-revisions.txt
 COPY bundle/examples/stehekin /opt/vicmf6/examples/stehekin
 COPY bundle/scripts/container-entrypoint.sh /opt/vicmf6/bin/container-entrypoint
@@ -143,6 +143,11 @@ ENV PATH="/opt/venv/bin:/opt/vicmf6/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE="1" \
     PYTHONUNBUFFERED="1" \
     PYTHONWARNINGS="ignore::DeprecationWarning"
+
+# Metadata changes must not invalidate the dependency installation cache.
+ARG SOURCE_REPOSITORY=https://github.com/HydroCSLab/vic-mf6
+ARG VERSION=local
+ARG REVISION=unknown
 
 LABEL org.opencontainers.image.title="VIC-MF6 two-way coupling stack" \
       org.opencontainers.image.description="Reproducible VIC and MODFLOW 6 two-way coupling runtime" \

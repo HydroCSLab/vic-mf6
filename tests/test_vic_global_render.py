@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 
 from vicmf6.schedule import CouplingWindow
-from vicmf6.vic import _render_global_parameter_file
+from vicmf6.vic.global_file import _render_global_parameter_file
 
 
 def test_subdaily_global_file_owns_nrecs_restart_and_result_directory(

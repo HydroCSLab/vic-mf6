@@ -29,7 +29,7 @@ Clone the bundle recursively and verify its exact source lock before building:
 
 ```bash
 mkdir -p "$HOME/usr/local/src"
-git clone --recurse-submodules https://github.com/mabdazzam/vic-mf6.git \
+git clone --recurse-submodules https://github.com/HydroCSLab/vic-mf6.git \
     "$HOME/usr/local/src/vic-mf6"
 cd "$HOME/usr/local/src/vic-mf6"
 ./bundle/scripts/check-components.sh

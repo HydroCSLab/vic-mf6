@@ -8,13 +8,12 @@ import sys
 from dataclasses import replace
 from pathlib import Path
 
-from .config import create_fresh_run_output_directories, load_config
-from .diagnostics import build_logger
+from .bootstrap import configure_thread_environment
 from .errors import VicMf6Error
-from .preflight import run_preflight
 
 
 def main(argv: list[str] | None = None) -> int:
+    configure_thread_environment()
     parser = _parser()
     args = parser.parse_args(argv)
     if args.command is None:
@@ -25,6 +24,10 @@ def main(argv: list[str] | None = None) -> int:
 
         print(__version__)
         return 0
+
+    from .config import create_fresh_run_output_directories, load_config
+    from .diagnostics import build_logger
+    from .preflight import run_preflight
 
     try:
         config = load_config(
@@ -78,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "post":
         try:
-            from .post import run_postprocessing
+            from .postprocess import run_postprocessing
 
             formats = tuple(
                 item.strip().lower() for item in args.formats.split(",") if item.strip()
@@ -180,7 +183,7 @@ def _parser() -> argparse.ArgumentParser:
     for name, help_text in (
         ("summarize", "write canonical tables, summaries, and acceptance outputs"),
         ("figures", "write canonical tables plus the complete figure suite"),
-        ("accept", "evaluate numerical and optional archived-reference acceptance"),
+        ("accept", "evaluate current-run numerical acceptance"),
         ("all", "write tables, acceptance outputs, report, and figures"),
     ):
         post_command = post_subparsers.add_parser(name, help=help_text)
@@ -205,7 +208,7 @@ def _parser() -> argparse.ArgumentParser:
         post_command.add_argument(
             "--strict-reference",
             action="store_true",
-            help="return failure if an available archived H8c reference comparison fails",
+            help=argparse.SUPPRESS,
         )
 
     subparsers.add_parser("version", help="print the package version")

@@ -31,10 +31,12 @@ def build_windows(
 
     if end_time <= start_time:
         raise ConfigurationError("coupling end time must be later than start time")
-    if interval_days <= 0.0:
+    if not math.isfinite(interval_days) or interval_days <= 0.0:
         raise ConfigurationError("coupling interval must be greater than zero")
 
     interval = timedelta(days=float(interval_days))
+    if interval <= timedelta(0):
+        raise ConfigurationError("coupling interval is below datetime resolution")
     windows: list[CouplingWindow] = []
     current = start_time
     index = 0

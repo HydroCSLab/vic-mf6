@@ -7,6 +7,9 @@ coupler.
 
 ## Current documentation
 
+- [Python architecture](python-architecture.md) gives a source reading guide,
+  explains model ownership and MPI shutdown, and describes extension points.
+
 - [Coupling design](coupling-design.md) defines model ownership, the exchange
   sign and units, the explicit coupling sequence, and the MPI process layout.
 - [Runtime and configuration](runtime-and-configuration.md) documents the YAML

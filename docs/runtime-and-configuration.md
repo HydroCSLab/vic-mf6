@@ -56,6 +56,8 @@ vic:
 
 coupling:
   exchange_table: exchange_table.csv
+  # Optional: route VIC OUT_RUNOFF to one SFR package in each GWF model.
+  surface_runoff_table: vic_sfr_runoff.csv
   interval_days: 1.0
   scheme: explicit
   exchange_length_m: 100.0
@@ -75,6 +77,34 @@ diagnostics:
 Model dates, VIC cell metadata, GWF model names, MODFLOW 6 time steps, and API
 package information are discovered from the model input files. They are not
 duplicated in the coupling YAML.
+
+When `surface_runoff_table` is present, the controller also reads VIC
+`OUT_RUNOFF`, converts the window depth to volume using each VIC cell area, and
+writes the corresponding rate to the MODFLOW 6 SFR `RUNOFF` array before each
+groundwater solve. The CSV has this schema:
+
+```text
+vic_id,vic_row,vic_col,mf6_model,sfr_package,sfr_reach,weight
+```
+
+`sfr_reach` is one based, matching the SFR input convention. Multiple rows may
+split one VIC cell among reaches, but the positive weights for every coupled VIC
+cell must sum to one. The runtime checks source and mapped volume independently,
+then reads converged SFR `SIMRUNOFF` at every native substep to verify actual
+application. An inactive reach that drops supplied runoff fails this check.
+Unmapped SFR reaches receive zero runoff for the window.
+
+## Thread settings
+
+The CLI defaults each controller and groundwater worker process to one thread
+before loading NumPy or native solvers. It sets missing `OMP_NUM_THREADS`,
+`OPENBLAS_NUM_THREADS`, `MKL_NUM_THREADS`, and `NUMEXPR_NUM_THREADS` to `1`, and
+`OMP_DYNAMIC` to `FALSE`. Explicit shell settings are preserved; export them
+before launching MPI when changing the allocation. Code that calls the Python
+runtime directly must set its environment before importing scientific libraries.
+
+`vic.omp_threads` separately sets these thread counts for each spawned VIC rank.
+It does not change the already-running controller or groundwater workers.
 
 ## Inspect and preflight
 
@@ -162,6 +192,19 @@ vicmf6 post all -c config.yml
 `post all` produces the complete package. Postprocessing reads model outputs
 and writes derived products; it does not change the completed VIC or MODFLOW 6
 results.
+
+For numerical acceptance, configure MF6 output control to `SAVE BUDGET ALL`.
+Every original TDIS step must appear in the saved CBC, with its native timestep
+duration. Saving only the last step of a stress period is insufficient to
+reconstruct its transferred water volume. Missing or non-finite required
+diagnostics fail acceptance rather than becoming zero errors.
+
+The optional confined-cell check is omitted for models with additional stresses
+or unavailable internal-flow evidence; the complete groundwater CBC budget
+remains the domain check. Acceptance does not establish a complete catchment
+budget including snow, soil, evapotranspiration, and channel storage.
+`--strict-reference` is retired and now reports an error instead of silently
+skipping an advertised historical comparison.
 
 ## Routine checks and provenance
 
